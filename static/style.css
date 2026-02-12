@@ -1,0 +1,53 @@
+body {
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.hero {
+    background: linear-gradient(to right, #0a1f44, #102a63);
+    color: white;
+    padding: 100px 0;
+}
+
+.service-card {
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.service-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.icon-box {
+    font-size: 40px;
+    color: #0a1f44;
+}
+
+.service-details {
+    display: none;
+    font-size: 0.95rem;
+    border-top: 1px solid #ddd;
+    margin-top: 10px;
+    padding-top: 10px;
+    text-align: left;
+}
+
+footer {
+    background-color: #0a1f44;
+    color: white;
+    padding: 20px 0;
+}
+#blogs {
+    background-color: #f8f9fa;
+}
+
+#blogs .card-title {
+    color: #0a1f44;
+    font-weight: 600;
+}
+
+#blogs .card:hover {
+    transform: translateY(-5px);
+    transition: 0.3s ease;
+}
