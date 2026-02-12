@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FinServe | Professional Financial Services</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#">FinServe</a>
+        <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
+                <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                <li class="nav-item">
+                    <button class="btn btn-outline-light ms-3" data-bs-toggle="modal" data-bs-target="#authModal">
+                        Login
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero text-center">
+    <div class="container">
+        <h1>Smart Financial Solutions</h1>
+        <p class="lead mt-3">Portfolio Management • Investment Advisory • Wealth Planning</p>
+        <button class="btn btn-light btn-lg mt-3">Get Started</button>
+    </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services" class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Our Services</h2>
+        <div class="row g-4">
+
+            <div class="col-md-4">
+                <div class="card service-card p-4 text-center" onclick="toggleServiceDetails(this)">
+                    <div class="icon-box">📊</div>
+                    <h5 class="mt-3">Portfolio Management</h5>
+                    <p>Optimized portfolios aligned with your goals.</p>
+                    <div class="service-details">
+                        Diversified investments, performance tracking and smart rebalancing.
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card service-card p-4 text-center" onclick="toggleServiceDetails(this)">
+                    <div class="icon-box">💼</div>
+                    <h5 class="mt-3">Investment Advisory</h5>
+                    <p>Expert market guidance.</p>
+                    <div class="service-details">
+                        Advice on equities, mutual funds, bonds and alternatives.
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card service-card p-4 text-center" onclick="toggleServiceDetails(this)">
+                    <div class="icon-box">📈</div>
+                    <h5 class="mt-3">Wealth Management</h5>
+                    <p>Long-term financial growth.</p>
+                    <div class="service-details">
+                        Asset allocation, estate planning and financial strategy.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about" class="bg-light py-5">
+    <div class="container">
+        <h2 class="text-center mb-4">About Me</h2>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center">
+                <h4 class="fw-bold">Giri Charan Pushpala</h4>
+                <p class="text-muted mb-1">
+                    Financial Advisor & Technical Research Analyst
+                </p>    
+
+                <p class="mt-3">
+                    I am a seasoned Financial Advisor and Technical Research Analyst
+                    with over <strong>5 years of experience in financial markets</strong>.
+                    I specialize in market analysis, portfolio optimization, risk
+                    management, and data-driven investment strategies to help clients
+                    achieve consistent and sustainable financial growth.
+                </p>
+
+                <p>
+                    My approach i based on Richard Wyckoff method where i analyse the market based
+                    on law of supply and demand for spotting short term trading oppurtunities 
+                    and investment oppurtunities are spotted based on both fundamentals and technicals.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- BLOGS -->
+<section id="blogs" class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Market Insights & Blogs</h2>
+
+        <div class="row g-4">
+
+            <!-- Blog 1 -->
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            Understanding Market Trends Using Technical Analysis
+                        </h5>
+                        <p class="text-muted small mb-2">
+                            By Giri Charan | Jan 2026
+                        </p>
+                        <p class="card-text">
+                            Learn how technical indicators, price action, and volume
+                            analysis help identify market trends and trading
+                            opportunities.
+                        </p>
+                        <a href="#" class="btn btn-outline-dark btn-sm">
+                            Read More
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blog 2 -->
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            Risk Management Strategies Every Investor Must Know
+                        </h5>
+                        <p class="text-muted small mb-2">
+                            By Giri Charan | Jan 2026
+                        </p>
+                        <p class="card-text">
+                            Discover essential risk management techniques to protect
+                            capital, reduce losses, and improve long-term portfolio
+                            performance.
+                        </p>
+                        <a href="#" class="btn btn-outline-dark btn-sm">
+                            Read More
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blog 3 -->
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            Long-Term Investing vs Active Trading: What’s Right for You?
+                        </h5>
+                        <p class="text-muted small mb-2">
+                            By Giri Charan | Jan 2026
+                        </p>
+                        <p class="card-text">
+                            A practical comparison between long-term investing and
+                            active trading to help you choose the right strategy.
+                        </p>
+                        <a href="#" class="btn btn-outline-dark btn-sm">
+                            Read More
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+
+<script>
+function submitForm() {
+    fetch("/contact", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            name: document.getElementById("name").value,
+            email: document.getElementById("email").value,
+            message: document.getElementById("message").value
+        })
+    })
+    .then(res => res.json())
+    .then(data => alert(data.message));
+}
+</script>
+
+<!-- CONTACT -->
+<section id="contact" class="bg-dark text-light py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Get in Touch</h2>
+
+        <div class="row g-4">
+
+            <!-- Contact Info -->
+            <div class="col-md-5">
+                <div class="p-4 border rounded h-100">
+
+                    <p class="mb-3">
+                        <i class="bi bi-telephone-fill me-2"></i>
+                        <strong>Phone:</strong> +91 9392762880
+                    </p>
+
+                    <p class="mb-3">
+                        <i class="bi bi-whatsapp me-2"></i>
+                        <strong>WhatsApp:</strong>
+                        <a href="https://wa.me/9392762880" class="text-light text-decoration-none" target="_blank">
+                            Chat Now
+                        </a>
+                    </p>
+
+                    <p class="mb-3">
+                        <i class="bi bi-envelope-fill me-2"></i>
+                        <strong>Email:</strong> giricharan480@gmail.com
+                    </p>
+
+                    <p class="mb-3">
+                        <i class="bi bi-geo-alt-fill me-2"></i>
+                        <strong>Location:</strong> Bengaluru, India
+                    </p>
+
+                    <p class="mb-3">
+                        <i class="bi bi-clock-fill me-2"></i>
+                        <strong>Working Hours:</strong><br>
+                        Mon – Fri | 9:00 AM – 6:00 PM
+                    </p>
+                    <a href="#" class="btn btn-outline-light mt-3 w-100">
+                         <i class="bi bi-calendar-check me-2"></i>
+                          Book Free Consultation
+                    </a>
+
+
+                    <p class="text-success mt-4">
+                        <i class="bi bi-shield-lock-fill me-2"></i>
+                        Your information is 100% confidential
+                    </p>
+                </div>
+            </div>
+
+            <!-- Contact Form -->
+            <div class="col-md-7">
+                <div class="p-4 border rounded">
+
+                    <h5 class="mb-3">Send a Message</h5>
+
+                    <input id="name" class="form-control mb-3" placeholder="Your Name">
+                    <input id="email" class="form-control mb-3" placeholder="Your Email">
+                    <textarea id="message" class="form-control mb-3" rows="4" placeholder="Your Message"></textarea>
+
+                    <button class="btn btn-success w-100" onclick="submitForm()">
+                        Send Message
+                    </button>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="text-center">
+    <p class="mb-0">© 2026 FinServe Financial Services | All Rights Reserved</p>
+</footer>
+
+<!-- AUTH MODAL -->
+<div class="modal fade" id="authModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Account Access</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <ul class="nav nav-tabs mb-3">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#login">Login</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#register">Register</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#forgot">Forgot</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+
+                    <div class="tab-pane fade show active" id="login">
+                        <input class="form-control mb-3" id="loginEmail" placeholder="Email">
+                        <input class="form-control mb-3" type="password" id="loginPassword" placeholder="Password">
+                        <button type="button" class="btn btn-dark w-100" onclick="login()">Sign In</button>
+
+                    </div>
+
+                   <div class="tab-pane fade" id="register">
+    <input class="form-control mb-3" id="regName" placeholder="Full Name">
+    <input class="form-control mb-3" id="regEmail" placeholder="Email">
+    <input class="form-control mb-3" type="password" id="regPassword" placeholder="Password">
+    <button type="button" class="btn btn-success w-100" onclick="register()">Create Account</button>
+</div>
+
+                    <div class="tab-pane fade" id="forgot">
+                        <input class="form-control mb-3" placeholder="Registered Email">
+                        <button type="button" class="btn btn-warning w-100" onclick="forgotPassword()">Reset Password</button>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="{{ url_for('static', filename='auth.js') }}"></script>
+
+</body>
+</html>
