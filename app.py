@@ -1,22 +1,54 @@
-from flask import Flask, render_template, request, jsonify, g, session
-import sqlite3
+from flask import Flask, render_template, request, jsonify, g, session, redirect
+import pymysql
 import os
-from werkzeug.security import check_password_hash
 from werkzeug.security import generate_password_hash, check_password_hash
-
-
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"  # REQUIRED for sessions
-DATABASE = "database.db"
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_USER = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "2004")
+DB_NAME = os.getenv("DB_NAME", "finserve")
 
 # ---------------- DATABASE ----------------
+def ensure_database_exists():
+    safe_db_name = DB_NAME.replace("`", "``")
+    setup_conn = pymysql.connect(
+        host=DB_HOST,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        autocommit=True,
+    )
+    setup_cur = setup_conn.cursor()
+    setup_cur.execute(f"CREATE DATABASE IF NOT EXISTS `{safe_db_name}`")
+    setup_cur.close()
+    setup_conn.close()
+
+
 def get_db():
     db = getattr(g, "_database", None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row
+        ensure_database_exists()
+        db = g._database = pymysql.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            cursorclass=pymysql.cursors.DictCursor,
+            autocommit=False,
+        )
     return db
+
+
+def get_db_connection():
+    ensure_database_exists()
+    return pymysql.connect(
+        host=DB_HOST,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME,
+        autocommit=False,
+    )
 
 @app.teardown_appcontext
 def close_connection(exception):
@@ -25,30 +57,30 @@ def close_connection(exception):
         db.close()
 
 def init_db():
-    if not os.path.exists(DATABASE):
-        db = sqlite3.connect(DATABASE)
-        cursor = db.cursor()
-        # Users table
-        cursor.execute("""
-            CREATE TABLE users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                email TEXT UNIQUE,
-                password TEXT
-            )
-        """)
-        # Contacts table
-        cursor.execute("""
-            CREATE TABLE contacts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                email TEXT,
-                message TEXT
-            )
-        """)
-        db.commit()
-        db.close()
-        print("Database initialized!")
+    db = get_db_connection()
+    cursor = db.cursor()
+    # Users table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255),
+            email VARCHAR(255) UNIQUE,
+            password VARCHAR(255)
+        )
+    """)
+    # Contacts table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS contacts (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255),
+            email VARCHAR(255),
+            message TEXT
+        )
+    """)
+    db.commit()
+    cursor.close()
+    db.close()
+    print("Database initialized!")
 
 # ---------------- ROUTES ----------------
 @app.route("/")
@@ -68,15 +100,14 @@ def login():
 
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT * FROM users WHERE email=?", (email,))
+    cursor.execute("SELECT * FROM users WHERE email=%s", (email,))
     user = cursor.fetchone()
     if user:
         print("DB password:", user["password"])
         print("Entered password:", password)
     else:
         print("No user found with this email")
-    print("DB password:", user["password"])
-    print("Entered password:", password)
+  
     if user and check_password_hash(user["password"], password):
         session["user"] = {
         "name": user["name"],
@@ -85,6 +116,26 @@ def login():
         return jsonify({"status": "success", "message": f"Welcome {user['name']}!"})
     else:
         return jsonify({"status": "error", "message": "Invalid email or password!"})
+@app.route('/userlog', methods=['POST'])
+def userlog():
+
+    name = request.form['name']
+    password = request.form['password']
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT password FROM users WHERE name=%s", (name,))
+    result = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    if result and check_password_hash(result[0], password):
+        return render_template('userlog.html')
+
+    return render_template('index.html', msg='Incorrect Credentials')
+
 @app.route("/dashboard")
 def dashboard():
     if "user" not in session:
@@ -110,8 +161,6 @@ def dashboard():
         portfolio=portfolio,
         holdings=holdings
     )
-
-
 @app.route("/logout")
 def logout():
     session.clear()
@@ -129,11 +178,13 @@ def register():
     db = get_db()
     cursor = db.cursor()
     try:
-        cursor.execute("INSERT INTO users (name,email,password) VALUES (?, ?, ?)", (name,email,hashed_password))
+        cursor.execute("INSERT INTO users (name,email,password) VALUES (%s, %s, %s)", (name, email, hashed_password))
         db.commit()
         return jsonify({"status": "success", "message": "User registered successfully!"})
-    except sqlite3.IntegrityError:
+    except pymysql.err.IntegrityError:
         return jsonify({"status": "error", "message": "Email already exists!"})
+
+
 
 # ---------------- CONTACT ----------------
 @app.route("/contact", methods=["POST"])
@@ -145,7 +196,7 @@ def contact():
 
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("INSERT INTO contacts (name,email,message) VALUES (?, ?, ?)", (name, email, message))
+    cursor.execute("INSERT INTO contacts (name,email,message) VALUES (%s, %s, %s)", (name, email, message))
     db.commit()
 
     return jsonify({"status": "success", "message": "Message saved successfully!"})
@@ -153,7 +204,6 @@ def contact():
 # ---------------- MAIN ----------------
 if __name__ == "__main__":
     init_db()
-    #app.run(debug=True)
 
 
 
