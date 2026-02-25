@@ -10,6 +10,7 @@ from email.message import EmailMessage
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 try:
     import yfinance as yf
@@ -17,11 +18,12 @@ except ImportError:
     yf = None
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "your_secret_key_here")
+app.secret_key = os.getenv("SECRET_KEY", os.urandom(32).hex())
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", "5432"))
-DB_USER = os.getenv("DB_USER", "root")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "2004")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME = os.getenv("DB_NAME", "finserve")
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 SMTP_HOST = os.getenv("SMTP_HOST", "")
@@ -35,6 +37,10 @@ ADMIN_EMAILS = {
     for email in os.getenv("ADMIN_EMAILS", "admin@finserve.com").split(",")
     if email.strip()
 }
+ENV = os.getenv("FLASK_ENV", "production").lower()
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "true").lower() == "true"
+SESSION_COOKIE_HTTPONLY = os.getenv("SESSION_COOKIE_HTTPONLY", "true").lower() == "true"
+SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
 INDEX_SYMBOLS = [
     ("NIFTY 50", "^NSEI"),
     ("BANK NIFTY", "^NSEBANK"),
@@ -44,6 +50,13 @@ INDEX_SYMBOLS = [
     ("NIFTY PHARMA", "^CNXPHARMA"),
     ("NIFTY METAL", "^CNXMETAL"),
 ]
+
+app.config.update(
+    SESSION_COOKIE_SECURE=SESSION_COOKIE_SECURE,
+    SESSION_COOKIE_HTTPONLY=SESSION_COOKIE_HTTPONLY,
+    SESSION_COOKIE_SAMESITE=SESSION_COOKIE_SAMESITE,
+    PERMANENT_SESSION_LIFETIME=60 * 60 * 12,
+)
 
 
 def send_contact_email(name, email, message):
@@ -236,7 +249,7 @@ def get_or_create_portfolio_id(db, email):
 
 def is_admin_email(email):
     e = str(email or "").strip().lower()
-    return e in ADMIN_EMAILS or e == "giricharan4321@gmail.com"
+    return e in ADMIN_EMAILS
 
 
 def get_portfolio_snapshot(db, portfolio_id):
@@ -1589,7 +1602,8 @@ def contact():
 
 if __name__ == "__main__":
     init_db()
-
+    debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=debug_mode)
 
 
 
