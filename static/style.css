@@ -2,6 +2,77 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
+.interactive-heading {
+    background: linear-gradient(90deg, #0a1f44, #0d6efd, #198754);
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    transition: background-position 0.35s ease, transform 0.25s ease;
+    display: inline-block;
+}
+
+.interactive-heading:hover {
+    background-position: 100% center;
+    transform: translateY(-1px);
+}
+
+.card-header.interactive-heading {
+    display: block;
+}
+
+.indices-ticker-wrap {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 1px solid #d9e2f2;
+    background: #ffffff;
+    box-shadow: 0 3px 10px rgba(10, 31, 68, 0.08);
+}
+
+.indices-ticker-track {
+    display: inline-flex;
+    gap: 10px;
+    white-space: nowrap;
+    padding: 8px 0;
+    animation: indices-ltr 28s linear infinite;
+    will-change: transform;
+}
+
+.indices-chip {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: #eef3ff;
+    color: #0a1f44;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.indices-chip.up {
+    background: #e8f0ff;
+    color: #0d6efd;
+}
+
+.indices-chip.down {
+    background: #ffecec;
+    color: #dc3545;
+}
+
+.indices-chip.flat {
+    background: #f1f3f5;
+    color: #495057;
+}
+
+@keyframes indices-ltr {
+    0% {
+        transform: translateX(-50%);
+    }
+    100% {
+        transform: translateX(0%);
+    }
+}
+
 .hero {
     background: linear-gradient(to right, #0a1f44, #102a63);
     color: white;
@@ -51,3 +122,5 @@ footer {
     transform: translateY(-5px);
     transition: 0.3s ease;
 }
+
+
