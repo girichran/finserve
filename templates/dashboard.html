@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard | FinServe</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="bg-light">
 
@@ -12,85 +14,348 @@
     <button class="btn btn-outline-light" onclick="logout()">Logout</button>
 </nav>
 
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
+    <div class="indices-ticker-wrap mb-3">
+        <div id="indicesTickerTrack" class="indices-ticker-track">
+            <span class="indices-chip">Loading market indices...</span>
+        </div>
+    </div>
 
-    <!-- Welcome Message -->
-    <h3 class="mb-4">Welcome back, {{ user.name }} 👋</h3>
+    <h3 class="mb-4 interactive-heading">Welcome back, {{ user.name }}</h3>
 
-    <!-- Portfolio Summary Cards -->
     <div class="row g-3 mb-4">
-
         <div class="col-md-3">
-            <div class="card text-center shadow">
+            <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h6>Total Invested</h6>
-                    <h5>₹{{ portfolio.invested }}</h5>
+                    <h5>{{ portfolio.invested }}</h5>
                 </div>
             </div>
         </div>
-
         <div class="col-md-3">
-            <div class="card text-center shadow">
+            <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h6>Current Value</h6>
-                    <h5>₹{{ portfolio.current }}</h5>
+                    <h5>{{ portfolio.current }}</h5>
                 </div>
             </div>
         </div>
-
         <div class="col-md-3">
-            <div class="card text-center shadow">
+            <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h6>Returns</h6>
-                    <h5 class="text-success">{{ portfolio.returns }}%</h5>
+                    <h5 class="{{ 'text-success' if portfolio.returns >= 0 else 'text-danger' }}">{{ portfolio.returns }}%</h5>
                 </div>
             </div>
         </div>
-
         <div class="col-md-3">
-            <div class="card text-center shadow">
+            <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h6>Risk Profile</h6>
                     <h5>{{ portfolio.risk }}</h5>
                 </div>
             </div>
         </div>
-
     </div>
 
-    <!-- Holdings Table -->
-    <div class="card shadow">
-        <div class="card-header fw-bold">
-            Your Holdings
-        </div>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-bold interactive-heading">Your Holdings</div>
         <div class="card-body">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Asset</th>
-                        <th>Type</th>
-                        <th>Invested (₹)</th>
-                        <th>Current (₹)</th>
-                        <th>P/L</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for h in holdings %}
-                    <tr>
-                        <td>{{ h.asset }}</td>
-                        <td>{{ h.type }}</td>
-                        <td>{{ h.invested }}</td>
-                        <td>{{ h.current }}</td>
-                        <td class="text-success">
-                            {{ h.current - h.invested }}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Type</th>
+                            <th>Qty</th>
+                            <th>Avg Price</th>
+                            <th>Current Price</th>
+                            <th>Invested</th>
+                            <th>Current</th>
+                            <th>P/L</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in holdings %}
+                        <tr>
+                            <td>{{ h.asset }}</td>
+                            <td>{{ h.type }}</td>
+                            <td>{{ h.quantity }}</td>
+                            <td>{{ h.avg_price }}</td>
+                            <td>{{ h.current_price }}</td>
+                            <td>{{ h.invested }}</td>
+                            <td>{{ h.current }}</td>
+                            <td class="{{ 'text-success' if h.pl >= 0 else 'text-danger' }}">{{ h.pl }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No holdings yet. Add your first buy transaction.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-bold interactive-heading">Rebalancing Assistant</div>
+        <div class="card-body">
+            <div class="row g-2 mb-3">
+                <div class="col-md-2">
+                    <label class="form-label">Equity %</label>
+                    <input id="targetEquity" class="form-control" type="number" value="{{ type_allocations.Equity }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Debt %</label>
+                    <input id="targetDebt" class="form-control" type="number" value="{{ type_allocations.Debt }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Gold %</label>
+                    <input id="targetGold" class="form-control" type="number" value="{{ type_allocations.Gold }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Crypto %</label>
+                    <input id="targetCrypto" class="form-control" type="number" value="{{ type_allocations.Crypto }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="generateRebalance()">Generate Plan</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered" id="rebalanceTable">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Current %</th>
+                            <th>Target %</th>
+                            <th>Current Value</th>
+                            <th>Target Value</th>
+                            <th>Action</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="7" class="text-center text-muted">Click "Generate Plan" to see suggestions.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-bold interactive-heading">Watchlist</div>
+        <div class="card-body">
+            <div class="row g-2 mb-3">
+                <div class="col-md-3">
+                    <div class="position-relative">
+                        <input id="watchSymbol" class="form-control" placeholder="Type stock name (e.g. Infosys)">
+                        <div id="watchSuggestions" class="list-group position-absolute w-100 d-none" style="z-index: 1050; max-height: 240px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select id="watchType" class="form-select">
+                        <option value="Equity">Equity</option>
+                        <option value="Debt">Debt</option>
+                        <option value="Gold">Gold</option>
+                        <option value="Crypto">Crypto</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input id="watchTarget" class="form-control" type="number" step="0.01" placeholder="Target price">
+                </div>
+                <div class="col-md-3">
+                    <input id="watchNote" class="form-control" placeholder="Note (optional)">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" onclick="addWatchlist()">Save</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Type</th>
+                            <th>Target</th>
+                            <th>Current</th>
+                            <th>Yesterday Close</th>
+                            <th>Performance %</th>
+                            <th>Note</th>
+                            <th>Added</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for w in watchlist %}
+                        <tr>
+                            <td>
+                                <a class="btn btn-link p-0 text-decoration-none" href="/stock/{{ w.symbol }}?asset_type={{ w.asset_type }}">
+                                    {{ w.symbol }}
+                                </a>
+                            </td>
+                            <td>{{ w.asset_type }}</td>
+                            <td>{{ w.target_price if w.target_price is not none else '-' }}</td>
+                            <td>{{ w.current_price if w.current_price is not none else '-' }}</td>
+                            <td>{{ w.prev_close if w.prev_close is not none else '-' }}</td>
+                            <td class="{% if w.trend == 'up' %}text-primary{% elif w.trend == 'down' %}text-danger{% else %}text-muted{% endif %}">
+                                {% if w.performance_pct is not none %}
+                                    {{ w.performance_pct }}%
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ w.note }}</td>
+                            <td>{{ w.created_at }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeWatchlist({{ w.id }})">Remove</button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted">No watchlist items yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="watchOrderPanel" class="border rounded p-3 mt-3 d-none">
+                <h6 class="mb-3">Stock Details: <span id="selectedSymbolLabel">-</span></h6>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header fw-bold interactive-heading">Order Book</div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <h6 class="text-primary">Bids</h6>
+                                        <table class="table table-sm mb-0">
+                                            <thead>
+                                                <tr><th>Price</th><th>Qty</th></tr>
+                                            </thead>
+                                            <tbody id="bidBookBody"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="col-6">
+                                        <h6 class="text-danger">Asks</h6>
+                                        <table class="table table-sm mb-0">
+                                            <thead>
+                                                <tr><th>Price</th><th>Qty</th></tr>
+                                            </thead>
+                                            <tbody id="askBookBody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header fw-bold interactive-heading">Market Stats</div>
+                            <div class="card-body">
+                                <p class="mb-2">Current Price: <strong id="detailCurrentPrice">-</strong></p>
+                                <p class="mb-2">Day Volume: <strong id="detailVolume">-</strong></p>
+                                <p class="mb-2">Average Traded Price: <strong id="detailAvgPrice">-</strong></p>
+                                <p class="mb-0">52 Week Range: <strong id="detail52Range">-</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <div class="d-flex gap-2 mb-3">
+                        <button id="orderSideBuy" class="btn btn-primary" onclick="setOrderSide('BUY')">Buy</button>
+                        <button id="orderSideSell" class="btn btn-danger" onclick="setOrderSide('SELL')">Sell</button>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <input id="orderQty" type="number" step="0.0001" class="form-control" placeholder="Number of shares">
+                        </div>
+                        <div class="col-md-3">
+                            <select id="orderType" class="form-select" onchange="toggleOrderType()">
+                                <option value="MARKET">Market Order</option>
+                                <option value="LIMIT">Limit Order</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-none" id="limitPriceWrap">
+                            <input id="orderLimitPrice" type="number" step="0.01" class="form-control" placeholder="Limit price">
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-dark w-100" onclick="placeWatchOrder()">Place Your Order</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header fw-bold interactive-heading">Transaction History</div>
+        <div class="card-body">
+            <div class="row g-2 mb-3">
+                <div class="col-md-2">
+                    <input id="filterSymbol" class="form-control" placeholder="Symbol">
+                </div>
+                <div class="col-md-2">
+                    <select id="filterType" class="form-select">
+                        <option value="">All</option>
+                        <option value="BUY">BUY</option>
+                        <option value="SELL">SELL</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input id="filterFrom" class="form-control" type="date">
+                </div>
+                <div class="col-md-2">
+                    <input id="filterTo" class="form-control" type="date">
+                </div>
+                <div class="col-md-2">
+                    <input id="filterLimit" class="form-control" type="number" value="20" min="1" max="100">
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button class="btn btn-outline-dark w-100" onclick="loadTransactions()">Apply</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped" id="transactionsTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Symbol</th>
+                            <th>Type</th>
+                            <th>Txn</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsBody">
+                        {% for t in transactions %}
+                        <tr>
+                            <td>{{ t.created_at }}</td>
+                            <td>{{ t.symbol }}</td>
+                            <td>{{ t.asset_type }}</td>
+                            <td>{{ t.txn_type }}</td>
+                            <td>{{ t.quantity }}</td>
+                            <td>{{ t.price }}</td>
+                            <td>{{ t.amount }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">No transactions yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -102,7 +367,387 @@ function logout() {
         window.location.href = "/";
     });
 }
+
+function syncPrices(mode) {
+    fetch("/prices/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Sync completed");
+        if (data.status === "success") {
+            window.location.reload();
+        }
+    })
+    .catch(() => alert("Price sync failed"));
+}
+
+function generateRebalance() {
+    const payload = {
+        target_allocations: {
+            Equity: Number(document.getElementById("targetEquity").value || 0),
+            Debt: Number(document.getElementById("targetDebt").value || 0),
+            Gold: Number(document.getElementById("targetGold").value || 0),
+            Crypto: Number(document.getElementById("targetCrypto").value || 0)
+        }
+    };
+
+    fetch("/rebalance/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status !== "success") {
+            alert(data.message || "Failed to generate rebalancing plan");
+            return;
+        }
+
+        const tbody = document.querySelector("#rebalanceTable tbody");
+        tbody.innerHTML = "";
+
+        data.suggestions.forEach(s => {
+            const row = document.createElement("tr");
+            const actionClass = s.action === "BUY" ? "text-success" : (s.action === "SELL" ? "text-danger" : "text-muted");
+            row.innerHTML = `
+                <td>${s.asset_type}</td>
+                <td>${s.current_pct}%</td>
+                <td>${s.target_pct}%</td>
+                <td>${s.current_value}</td>
+                <td>${s.target_value}</td>
+                <td class="${actionClass}">${s.action}</td>
+                <td>${s.amount}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    })
+    .catch(() => alert("Failed to generate rebalancing plan"));
+}
+
+function loadTransactions() {
+    const symbol = document.getElementById("filterSymbol").value.trim();
+    const txnType = document.getElementById("filterType").value;
+    const dateFrom = document.getElementById("filterFrom").value;
+    const dateTo = document.getElementById("filterTo").value;
+    const limit = document.getElementById("filterLimit").value || 20;
+
+    const params = new URLSearchParams();
+    if (symbol) params.append("symbol", symbol);
+    if (txnType) params.append("txn_type", txnType);
+    if (dateFrom) params.append("date_from", dateFrom);
+    if (dateTo) params.append("date_to", dateTo);
+    params.append("limit", limit);
+
+    fetch(`/transactions/history?${params.toString()}`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.status !== "success") {
+            alert(data.message || "Failed to load transactions");
+            return;
+        }
+
+        const tbody = document.getElementById("transactionsBody");
+        tbody.innerHTML = "";
+
+        if (!data.transactions.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No matching transactions found.</td></tr>';
+            return;
+        }
+
+        data.transactions.forEach(t => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${t.created_at}</td>
+                <td>${t.symbol}</td>
+                <td>${t.asset_type}</td>
+                <td>${t.txn_type}</td>
+                <td>${t.quantity}</td>
+                <td>${t.price}</td>
+                <td>${t.amount}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    })
+    .catch(() => alert("Failed to load transactions"));
+}
+
+function addWatchlist() {
+    const symbolInput = document.getElementById("watchSymbol").value.trim();
+    const symbol = selectedWatchSymbol || extractSymbol(symbolInput);
+    const assetType = document.getElementById("watchType").value;
+    const targetPrice = document.getElementById("watchTarget").value;
+    const note = document.getElementById("watchNote").value;
+
+    if (!symbol) {
+        alert("Select a stock from suggestions or enter a valid symbol.");
+        return;
+    }
+
+    fetch("/watchlist/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            symbol: symbol,
+            asset_type: assetType,
+            target_price: targetPrice,
+            note: note
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        if (data.status === "success") {
+            selectedWatchSymbol = "";
+            window.location.reload();
+        }
+    })
+    .catch(() => alert("Failed to save watchlist item"));
+}
+
+function removeWatchlist(itemId) {
+    fetch(`/watchlist/remove/${itemId}`, {
+        method: "POST"
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        if (data.status === "success") {
+            window.location.reload();
+        }
+    })
+    .catch(() => alert("Failed to remove watchlist item"));
+}
+
+let selectedOrderSymbol = "";
+let selectedOrderAssetType = "Equity";
+let selectedOrderSide = "BUY";
+let selectedCurrentPrice = 0;
+let selectedWatchSymbol = "";
+let watchSuggestTimer = null;
+
+function extractSymbol(inputText) {
+    if (!inputText) return "";
+    const match = inputText.match(/\(([A-Za-z0-9.\-^=]+)\)\s*$/);
+    if (match && match[1]) {
+        return match[1].toUpperCase();
+    }
+    if (/^[A-Za-z0-9.\-^=]+$/.test(inputText)) {
+        return inputText.toUpperCase();
+    }
+    return "";
+}
+
+function hideWatchSuggestions() {
+    const box = document.getElementById("watchSuggestions");
+    if (!box) return;
+    box.classList.add("d-none");
+    box.innerHTML = "";
+}
+
+function loadWatchSuggestions(query) {
+    fetch(`/stocks/suggest?q=${encodeURIComponent(query)}`)
+    .then(res => res.json())
+    .then(data => {
+        const box = document.getElementById("watchSuggestions");
+        if (!box) return;
+
+        if (data.status !== "success" || !data.items || !data.items.length) {
+            hideWatchSuggestions();
+            return;
+        }
+
+        box.innerHTML = "";
+        data.items.forEach(item => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "list-group-item list-group-item-action";
+            btn.textContent = `${item.name} (${item.symbol})`;
+            btn.onmousedown = (e) => {
+                e.preventDefault();
+                document.getElementById("watchSymbol").value = `${item.name} (${item.symbol})`;
+                selectedWatchSymbol = item.symbol;
+                hideWatchSuggestions();
+            };
+            box.appendChild(btn);
+        });
+        box.classList.remove("d-none");
+    })
+    .catch(() => hideWatchSuggestions());
+}
+
+function renderIndicesTicker(items) {
+    const track = document.getElementById("indicesTickerTrack");
+    if (!items || !items.length) {
+        track.innerHTML = '<span class="indices-chip">Unable to load market indices</span>';
+        return;
+    }
+
+    const chips = items.map(item => {
+        const pct = item.change_pct === null || item.change_pct === undefined
+            ? ""
+            : ` (${item.change_pct >= 0 ? "+" : ""}${item.change_pct}%)`;
+        const trendClass = item.trend === "up" ? "up" : (item.trend === "down" ? "down" : "flat");
+        return `<span class="indices-chip ${trendClass}">${item.label}: ${item.price}${pct}</span>`;
+    });
+
+    track.innerHTML = `${chips.join("")}${chips.join("")}`;
+}
+
+function loadMarketIndices() {
+    fetch("/market/indices")
+    .then(res => res.json())
+    .then(data => {
+        if (data.status !== "success") {
+            renderIndicesTicker([]);
+            return;
+        }
+        renderIndicesTicker(data.items || []);
+    })
+    .catch(() => renderIndicesTicker([]));
+}
+
+function loadWatchlistStock(symbol, assetType) {
+    selectedOrderSymbol = symbol;
+    selectedOrderAssetType = assetType || "Equity";
+    selectedOrderSide = "BUY";
+    document.getElementById("orderSideBuy").classList.remove("btn-outline-primary");
+    document.getElementById("orderSideBuy").classList.add("btn-primary");
+    document.getElementById("orderSideSell").classList.remove("btn-danger");
+    document.getElementById("orderSideSell").classList.add("btn-outline-danger");
+    document.getElementById("selectedSymbolLabel").textContent = symbol;
+    document.getElementById("watchOrderPanel").classList.remove("d-none");
+
+    fetch(`/watchlist/quote/${encodeURIComponent(symbol)}`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.status !== "success") {
+            alert(data.message || "Failed to load stock details");
+            return;
+        }
+
+        const d = data.data;
+        selectedCurrentPrice = Number(d.current_price || 0);
+
+        document.getElementById("detailCurrentPrice").textContent = d.current_price ?? "-";
+        document.getElementById("detailVolume").textContent = d.day_volume ?? "-";
+        document.getElementById("detailAvgPrice").textContent = d.avg_traded_price ?? "-";
+        document.getElementById("detail52Range").textContent = `${d.week52_low ?? "-"} - ${d.week52_high ?? "-"}`;
+
+        const bidBody = document.getElementById("bidBookBody");
+        const askBody = document.getElementById("askBookBody");
+        bidBody.innerHTML = "";
+        askBody.innerHTML = "";
+
+        (d.order_book?.bids || []).forEach(level => {
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${level.price}</td><td>${level.quantity}</td>`;
+            bidBody.appendChild(row);
+        });
+
+        (d.order_book?.asks || []).forEach(level => {
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${level.price}</td><td>${level.quantity}</td>`;
+            askBody.appendChild(row);
+        });
+    })
+    .catch(() => alert("Failed to load stock details"));
+}
+
+function setOrderSide(side) {
+    selectedOrderSide = side;
+    const buyBtn = document.getElementById("orderSideBuy");
+    const sellBtn = document.getElementById("orderSideSell");
+
+    if (side === "BUY") {
+        buyBtn.classList.remove("btn-outline-primary");
+        buyBtn.classList.add("btn-primary");
+        sellBtn.classList.remove("btn-danger");
+        sellBtn.classList.add("btn-outline-danger");
+    } else {
+        sellBtn.classList.remove("btn-outline-danger");
+        sellBtn.classList.add("btn-danger");
+        buyBtn.classList.remove("btn-primary");
+        buyBtn.classList.add("btn-outline-primary");
+    }
+}
+
+function toggleOrderType() {
+    const orderType = document.getElementById("orderType").value;
+    const limitWrap = document.getElementById("limitPriceWrap");
+    if (orderType === "LIMIT") {
+        limitWrap.classList.remove("d-none");
+    } else {
+        limitWrap.classList.add("d-none");
+    }
+}
+
+function placeWatchOrder() {
+    if (!selectedOrderSymbol) {
+        alert("Select a watchlist stock first.");
+        return;
+    }
+
+    const quantity = Number(document.getElementById("orderQty").value || 0);
+    const orderType = document.getElementById("orderType").value;
+    const limitPrice = Number(document.getElementById("orderLimitPrice").value || 0);
+
+    if (quantity <= 0) {
+        alert("Enter a valid number of shares.");
+        return;
+    }
+    if (orderType === "LIMIT" && limitPrice <= 0) {
+        alert("Enter a valid limit price.");
+        return;
+    }
+
+    fetch("/order/place", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            symbol: selectedOrderSymbol,
+            asset_type: selectedOrderAssetType,
+            side: selectedOrderSide,
+            quantity: quantity,
+            order_type: orderType,
+            limit_price: orderType === "LIMIT" ? limitPrice : null
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        if (data.status === "success") {
+            window.location.reload();
+        }
+    })
+    .catch(() => alert("Failed to place order"));
+}
+
+loadMarketIndices();
+setInterval(loadMarketIndices, 60000);
+
+const watchSymbolInput = document.getElementById("watchSymbol");
+if (watchSymbolInput) {
+    watchSymbolInput.addEventListener("input", function () {
+        selectedWatchSymbol = "";
+        const query = this.value.trim();
+        if (watchSuggestTimer) clearTimeout(watchSuggestTimer);
+
+        if (query.length < 2) {
+            hideWatchSuggestions();
+            return;
+        }
+        watchSuggestTimer = setTimeout(() => loadWatchSuggestions(query), 250);
+    });
+
+    watchSymbolInput.addEventListener("blur", function () {
+        setTimeout(hideWatchSuggestions, 120);
+    });
+}
 </script>
 
 </body>
 </html>
+
