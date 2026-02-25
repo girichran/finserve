@@ -2,5 +2,9 @@ Flask==3.0.0
 Werkzeug
 gunicorn
 pymysql
+psycopg2-binary>=2.9.9
+cryptography>=42.0.0
+yfinance>=0.2.43
+
 
 
