@@ -310,6 +310,9 @@ function submitForm() {
                         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#login">Login</button>
                     </li>
                     <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#adminLogin">Admin</button>
+                    </li>
+                    <li class="nav-item">
                         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#register">Register</button>
                     </li>
                     <li class="nav-item">
@@ -324,6 +327,12 @@ function submitForm() {
                         <input class="form-control mb-3" type="password" id="loginPassword" placeholder="Password">
                         <button type="button" class="btn btn-dark w-100" onclick="login()">Sign In</button>
 
+                    </div>
+
+                    <div class="tab-pane fade" id="adminLogin">
+                        <input class="form-control mb-3" id="adminEmail" placeholder="Admin Email">
+                        <input class="form-control mb-3" type="password" id="adminPassword" placeholder="Admin Password">
+                        <button type="button" class="btn btn-danger w-100" onclick="adminLogin()">Admin Sign In</button>
                     </div>
 
                    <div class="tab-pane fade" id="register">
@@ -353,3 +362,4 @@ function submitForm() {
 
 </body>
 </html>
+
