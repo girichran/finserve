@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ symbol }} | FinServe</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark px-4">
+    <a href="/dashboard" class="navbar-brand text-decoration-none">FinServe Dashboard</a>
+    <span class="text-light">{{ user.name }}</span>
+</nav>
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="interactive-heading mb-0">{{ symbol }} Overview</h3>
+        <a href="/dashboard" class="btn btn-outline-dark btn-sm">Back</a>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-bold interactive-heading">Price Chart</div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2 mb-3" id="timeframeButtons">
+                <button class="btn btn-sm btn-primary" onclick="setTimeframe('15min', this)">15min</button>
+                <button class="btn btn-sm btn-outline-primary" onclick="setTimeframe('1hr', this)">1hr</button>
+                <button class="btn btn-sm btn-outline-primary" onclick="setTimeframe('1D', this)">1D</button>
+                <button class="btn btn-sm btn-outline-primary" onclick="setTimeframe('1W', this)">1W</button>
+                <button class="btn btn-sm btn-outline-primary" onclick="setTimeframe('1M', this)">1M</button>
+            </div>
+            <div style="height: 380px;">
+                <canvas id="stockChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-bold interactive-heading">Order Book</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <h6 class="text-primary">Bids</h6>
+                            <table class="table table-sm">
+                                <thead><tr><th>Price</th><th>Qty</th></tr></thead>
+                                <tbody id="bidBookBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-danger">Asks</h6>
+                            <table class="table table-sm">
+                                <thead><tr><th>Price</th><th>Qty</th></tr></thead>
+                                <tbody id="askBookBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-bold interactive-heading">Market Stats</div>
+                <div class="card-body">
+                    <p class="mb-2">Current Price: <strong id="detailCurrentPrice">-</strong></p>
+                    <p class="mb-2">Volume (Day): <strong id="detailVolume">-</strong></p>
+                    <p class="mb-2">Average Traded Price: <strong id="detailAvgPrice">-</strong></p>
+                    <p class="mb-0">52 Week Range: <strong id="detail52Range">-</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header fw-bold interactive-heading">Place Order</div>
+        <div class="card-body">
+            <div class="d-flex gap-2 mb-3">
+                <button id="orderSideBuy" class="btn btn-primary" onclick="setOrderSide('BUY')">Buy</button>
+                <button id="orderSideSell" class="btn btn-danger" onclick="setOrderSide('SELL')">Sell</button>
+            </div>
+
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Number of Shares</label>
+                    <input id="orderQty" type="number" step="0.0001" class="form-control" placeholder="Quantity">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Order Type</label>
+                    <select id="orderType" class="form-select" onchange="toggleOrderType()">
+                        <option value="MARKET">Market Order</option>
+                        <option value="LIMIT">Limit Order</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-none" id="limitPriceWrap">
+                    <label class="form-label">Limit Price</label>
+                    <input id="orderLimitPrice" type="number" step="0.01" class="form-control" placeholder="Enter price">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-dark w-100" onclick="placeOrder()">Place Your Order</button>
+                </div>
+            </div>
+
+            <div class="row g-2 align-items-end mt-3">
+                <div class="col-md-4">
+                    <label class="form-label">Stop Loss</label>
+                    <input id="stopLossInput" type="number" step="0.01" class="form-control" placeholder="Enter stop loss">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-warning w-100" onclick="saveStopLoss()">Save Stop Loss</button>
+                </div>
+                <div class="col-md-5">
+                    <p class="mb-0">Current Stop Loss: <strong id="currentStopLoss">-</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const stockSymbol = "{{ symbol }}";
+const stockAssetType = "{{ asset_type }}";
+let selectedOrderSide = "BUY";
+let chartRef = null;
+
+function setTimeframe(timeframe, btn) {
+    document.querySelectorAll('#timeframeButtons button').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-outline-primary');
+    });
+    btn.classList.remove('btn-outline-primary');
+    btn.classList.add('btn-primary');
+    loadChart(timeframe);
+}
+
+function loadChart(timeframe) {
+    fetch(`/stock/chart/${encodeURIComponent(stockSymbol)}?timeframe=${encodeURIComponent(timeframe)}`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.status !== 'success') {
+            alert(data.message || 'Failed to load chart');
+            return;
+        }
+
+        const d = data.data;
+        const ctx = document.getElementById('stockChart').getContext('2d');
+        if (chartRef) {
+            chartRef.destroy();
+        }
+
+        chartRef = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: d.labels,
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'Range (Low-High)',
+                        data: d.low_prices.map((low, i) => [low, d.high_prices[i]]),
+                        yAxisID: 'yPrice',
+                        backgroundColor: 'rgba(13, 110, 253, 0.20)',
+                        borderColor: 'rgba(13, 110, 253, 0.9)',
+                        borderWidth: 1
+                    },
+                    {
+                        type: 'scatter',
+                        label: 'Close',
+                        data: d.close_prices,
+                        yAxisID: 'yPrice',
+                        borderColor: 'rgba(10, 31, 68, 1)',
+                        backgroundColor: 'rgba(10, 31, 68, 1)',
+                        pointStyle: 'rect',
+                        pointRadius: 4,
+                        pointHoverRadius: 4
+                    },
+                    {
+                        type: 'line',
+                        label: 'Volume',
+                        data: d.volumes,
+                        yAxisID: 'yVolume',
+                        borderColor: 'rgba(220, 53, 69, 0.9)',
+                        backgroundColor: 'rgba(220, 53, 69, 0.15)',
+                        tension: 0.2,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    yPrice: {
+                        position: 'left',
+                        title: { display: true, text: 'Price' }
+                    },
+                    yVolume: {
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: 'Volume' }
+                    }
+                }
+            }
+        });
+    })
+    .catch(() => alert('Failed to load chart data'));
+}
+
+function loadStopLoss() {
+    fetch(`/stock/stoploss/${encodeURIComponent(stockSymbol)}`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.status !== 'success') {
+            return;
+        }
+        if (data.stop_loss !== null && data.stop_loss !== undefined) {
+            document.getElementById('currentStopLoss').textContent = data.stop_loss;
+            document.getElementById('stopLossInput').value = data.stop_loss;
+        } else {
+            document.getElementById('currentStopLoss').textContent = '-';
+        }
+    })
+    .catch(() => {});
+}
+
+function saveStopLoss() {
+    const stopLoss = Number(document.getElementById('stopLossInput').value || 0);
+    if (stopLoss <= 0) {
+        alert('Enter a valid stop loss value.');
+        return;
+    }
+
+    fetch(`/stock/stoploss/${encodeURIComponent(stockSymbol)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stop_loss: stopLoss })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || 'Stop loss updated');
+        if (data.status === 'success') {
+            document.getElementById('currentStopLoss').textContent = data.stop_loss;
+        }
+    })
+    .catch(() => alert('Failed to save stop loss'));
+}
+
+function loadStockDetails() {
+    fetch(`/watchlist/quote/${encodeURIComponent(stockSymbol)}`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.status !== 'success') {
+            alert(data.message || 'Failed to load stock details');
+            return;
+        }
+
+        const d = data.data;
+        document.getElementById('detailCurrentPrice').textContent = d.current_price ?? '-';
+        document.getElementById('detailVolume').textContent = d.day_volume ?? '-';
+        document.getElementById('detailAvgPrice').textContent = d.avg_traded_price ?? '-';
+        document.getElementById('detail52Range').textContent = `${d.week52_low ?? '-'} - ${d.week52_high ?? '-'}`;
+
+        const bidBody = document.getElementById('bidBookBody');
+        const askBody = document.getElementById('askBookBody');
+        bidBody.innerHTML = '';
+        askBody.innerHTML = '';
+
+        (d.order_book?.bids || []).forEach(level => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${level.price}</td><td>${level.quantity}</td>`;
+            bidBody.appendChild(row);
+        });
+
+        (d.order_book?.asks || []).forEach(level => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${level.price}</td><td>${level.quantity}</td>`;
+            askBody.appendChild(row);
+        });
+    })
+    .catch(() => alert('Failed to load stock details'));
+}
+
+function setOrderSide(side) {
+    selectedOrderSide = side;
+    const buyBtn = document.getElementById('orderSideBuy');
+    const sellBtn = document.getElementById('orderSideSell');
+
+    if (side === 'BUY') {
+        buyBtn.classList.remove('btn-outline-primary');
+        buyBtn.classList.add('btn-primary');
+        sellBtn.classList.remove('btn-danger');
+        sellBtn.classList.add('btn-outline-danger');
+    } else {
+        sellBtn.classList.remove('btn-outline-danger');
+        sellBtn.classList.add('btn-danger');
+        buyBtn.classList.remove('btn-primary');
+        buyBtn.classList.add('btn-outline-primary');
+    }
+}
+
+function toggleOrderType() {
+    const orderType = document.getElementById('orderType').value;
+    const limitWrap = document.getElementById('limitPriceWrap');
+    if (orderType === 'LIMIT') {
+        limitWrap.classList.remove('d-none');
+    } else {
+        limitWrap.classList.add('d-none');
+    }
+}
+
+function placeOrder() {
+    const quantity = Number(document.getElementById('orderQty').value || 0);
+    const orderType = document.getElementById('orderType').value;
+    const limitPrice = Number(document.getElementById('orderLimitPrice').value || 0);
+
+    if (quantity <= 0) {
+        alert('Enter a valid number of shares.');
+        return;
+    }
+    if (orderType === 'LIMIT' && limitPrice <= 0) {
+        alert('Enter a valid limit price.');
+        return;
+    }
+
+    fetch('/order/place', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            symbol: stockSymbol,
+            asset_type: stockAssetType,
+            side: selectedOrderSide,
+            quantity: quantity,
+            order_type: orderType,
+            limit_price: orderType === 'LIMIT' ? limitPrice : null
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        if (data.status === 'success') {
+            loadStockDetails();
+        }
+    })
+    .catch(() => alert('Failed to place order'));
+}
+
+loadStockDetails();
+loadChart('15min');
+loadStopLoss();
+setInterval(loadStockDetails, 60000);
+</script>
+
+</body>
+</html>
