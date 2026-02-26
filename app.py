@@ -26,15 +26,15 @@ DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME = os.getenv("DB_NAME", "finserve")
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://giri:EdbUuoZBonv5SnPyXVmnVrs891XpbrjF@dpg-d6fcea88tnhs73cn71r0-a/finserve")
-SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_USER = os.getenv("SMTP_USER", "giricharan480@gmail.com")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "shypnilgyelvndbs")
 CONTACT_TO_EMAIL = os.getenv("CONTACT_TO_EMAIL", SMTP_USER)
 CONTACT_FROM_EMAIL = os.getenv("CONTACT_FROM_EMAIL", SMTP_USER)
 ADMIN_EMAILS = {
     email.strip().lower()
-    for email in os.getenv("ADMIN_EMAILS", "admin@finserve.com").split(",")
+    for email in os.getenv("ADMIN_EMAILS", "giricharan480@gmail.com").split(",")
     if email.strip()
 }
 ENV = os.getenv("FLASK_ENV", "production").lower()
@@ -1604,6 +1604,7 @@ if __name__ == "__main__":
     init_db()
     debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
     app.run(debug=debug_mode)
+
 
 
 
