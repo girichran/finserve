@@ -1,3 +1,22 @@
+function clearAuthFields() {
+    const ids = [
+        "loginEmail",
+        "loginPassword",
+        "adminEmail",
+        "adminPassword",
+        "regName",
+        "regEmail",
+        "regPassword",
+        "forgotEmail",
+        "forgotOtp",
+        "forgotNewPassword"
+    ];
+    ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
+}
+
 // LOGIN
 function login() {
     fetch("/login", {
@@ -11,6 +30,7 @@ function login() {
     .then(res => res.json())
     .then(data => {
     if (data.status === "success") {
+        clearAuthFields();
         window.location.href = data.redirect_url || "/dashboard";
     } else {
         alert(data.message);
@@ -33,6 +53,7 @@ function adminLogin() {
     .then(res => res.json())
     .then(data => {
         if (data.status === "success") {
+            clearAuthFields();
             window.location.href = data.redirect_url || "/admin";
         } else {
             alert(data.message);
@@ -59,23 +80,84 @@ function register() {
         } else {
             alert(data.message);
         }
+        clearAuthFields();
+    })
+    .catch(err => console.error(err));
+}
+
+// FORGOT PASSWORD - SEND OTP
+function forgotPassword() {
+    const email = (document.getElementById("forgotEmail")?.value || "").trim();
+    if (!email) {
+        alert("Please enter your registered email.");
+        return;
+    }
+
+    fetch("/auth/forgot/request", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ email })
+    })
+    .then(res => res.json())
+    .then(data => alert(data.message || "Request completed"))
+    .catch(err => console.error(err));
+}
+
+// FORGOT PASSWORD - VERIFY OTP + RESET
+function resetPasswordWithOtp() {
+    const email = (document.getElementById("forgotEmail")?.value || "").trim();
+    const otp = (document.getElementById("forgotOtp")?.value || "").trim();
+    const newPassword = document.getElementById("forgotNewPassword")?.value || "";
+
+    if (!email || !otp || !newPassword) {
+        alert("Email, OTP, and new password are required.");
+        return;
+    }
+
+    fetch("/auth/forgot/reset", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            email: email,
+            otp: otp,
+            new_password: newPassword
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Request completed");
+        if (data.status === "success") {
+            const forgotOtp = document.getElementById("forgotOtp");
+            const forgotNewPassword = document.getElementById("forgotNewPassword");
+            if (forgotOtp) forgotOtp.value = "";
+            if (forgotNewPassword) forgotNewPassword.value = "";
+        }
     })
     .catch(err => console.error(err));
 }
 
 // CONTACT FORM
 function submitForm() {
+    const nameEl = document.getElementById("name");
+    const emailEl = document.getElementById("email");
+    const messageEl = document.getElementById("message");
+
     fetch("/contact", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-            name: document.getElementById("name").value,
-            email: document.getElementById("email").value,
-            message: document.getElementById("message").value
+            name: nameEl ? nameEl.value : "",
+            email: emailEl ? emailEl.value : "",
+            message: messageEl ? messageEl.value : ""
         })
     })
     .then(res => res.json())
-    .then(data => alert(data.message))
+    .then(data => {
+        alert(data.message);
+        if (nameEl) nameEl.value = "";
+        if (emailEl) emailEl.value = "";
+        if (messageEl) messageEl.value = "";
+    })
     .catch(err => console.error(err));
 }
 function logout() {
@@ -87,5 +169,15 @@ function logout() {
     })
     .catch(err => console.error(err));
 }  
+
+document.addEventListener("DOMContentLoaded", () => {
+    clearAuthFields();
+    const authModal = document.getElementById("authModal");
+    if (authModal) {
+        authModal.addEventListener("show.bs.modal", clearAuthFields);
+    }
+});
+
+window.addEventListener("pageshow", clearAuthFields);
 
 
