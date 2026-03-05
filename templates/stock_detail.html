@@ -153,39 +153,21 @@ function loadChart(timeframe) {
         }
 
         chartRef = new Chart(ctx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: d.labels,
                 datasets: [
                     {
-                        type: 'bar',
-                        label: 'Range (Low-High)',
-                        data: d.low_prices.map((low, i) => [low, d.high_prices[i]]),
-                        yAxisID: 'yPrice',
-                        backgroundColor: 'rgba(13, 110, 253, 0.20)',
-                        borderColor: 'rgba(13, 110, 253, 0.9)',
-                        borderWidth: 1
-                    },
-                    {
-                        type: 'scatter',
-                        label: 'Close',
+                        label: 'Price',
                         data: d.close_prices,
-                        yAxisID: 'yPrice',
-                        borderColor: 'rgba(10, 31, 68, 1)',
-                        backgroundColor: 'rgba(10, 31, 68, 1)',
-                        pointStyle: 'rect',
-                        pointRadius: 4,
-                        pointHoverRadius: 4
-                    },
-                    {
-                        type: 'line',
-                        label: 'Volume',
-                        data: d.volumes,
-                        yAxisID: 'yVolume',
-                        borderColor: 'rgba(220, 53, 69, 0.9)',
-                        backgroundColor: 'rgba(220, 53, 69, 0.15)',
-                        tension: 0.2,
-                        pointRadius: 0
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        backgroundColor: 'rgba(13, 110, 253, 0.12)',
+                        borderWidth: 2,
+                        tension: 0.25,
+                        fill: true,
+                        pointStyle: 'circle',
+                        pointRadius: 3,
+                        pointHoverRadius: 5
                     }
                 ]
             },
@@ -196,14 +178,8 @@ function loadChart(timeframe) {
                     legend: { display: true }
                 },
                 scales: {
-                    yPrice: {
-                        position: 'left',
+                    y: {
                         title: { display: true, text: 'Price' }
-                    },
-                    yVolume: {
-                        position: 'right',
-                        grid: { drawOnChartArea: false },
-                        title: { display: true, text: 'Volume' }
                     }
                 }
             }
