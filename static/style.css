@@ -488,3 +488,143 @@ footer {
     }
 }
 
+@media (max-width: 768px) {
+    .dashboard-page .container.mt-4.mb-5 {
+        margin-top: 0.9rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .dashboard-nav-inner {
+        gap: 8px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+    .dashboard-brand {
+        font-size: 1.1rem;
+    }
+
+    .dashboard-main-links {
+        order: 3;
+        width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        padding-bottom: 4px;
+    }
+
+    .dashboard-main-links a {
+        white-space: nowrap;
+        font-size: 0.82rem;
+        padding: 6px 8px;
+    }
+
+    .dashboard-user-actions {
+        width: 100%;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .dashboard-user-actions .btn {
+        padding: 4px 9px;
+        font-size: 0.78rem;
+    }
+
+    .interactive-heading {
+        font-size: 1.05rem;
+    }
+
+    .card-body {
+        padding: 0.9rem;
+    }
+
+    .dashboard-shortcuts {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 3px;
+    }
+
+    .shortcut-pill {
+        white-space: nowrap;
+        font-size: 0.78rem;
+        padding: 6px 10px;
+    }
+
+    .dashboard-card {
+        border-radius: 10px;
+    }
+
+    .indices-chip,
+    .mover-chip {
+        font-size: 0.78rem;
+        padding: 4px 9px;
+    }
+
+    .sector-heatmap-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sector-cells {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .heat-cell {
+        min-height: 64px;
+        padding: 7px;
+    }
+
+    .insight-news-list,
+    .insight-events-list {
+        max-height: none;
+    }
+
+    .table {
+        font-size: 0.84rem;
+    }
+
+    .table th,
+    .table td {
+        white-space: nowrap;
+    }
+
+    .plan-card {
+        padding: 14px;
+    }
+
+    .plan-price {
+        font-size: 1.35rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-brand {
+        font-size: 1rem;
+    }
+
+    .dashboard-main-links a {
+        font-size: 0.77rem;
+        padding: 5px 7px;
+    }
+
+    .dashboard-user-actions .btn {
+        font-size: 0.74rem;
+        padding: 4px 8px;
+    }
+
+    .interactive-heading {
+        font-size: 0.98rem;
+    }
+
+    .card-body {
+        padding: 0.78rem;
+    }
+
+    .shortcut-pill {
+        font-size: 0.74rem;
+        padding: 5px 9px;
+    }
+}
+
+
