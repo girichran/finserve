@@ -5,6 +5,9 @@ pymysql
 psycopg2-binary>=2.9.9
 cryptography>=42.0.0
 yfinance>=0.2.43
+python-dotenv>=1.0.1
+certifi>=2024.8.30
+
 
 
 
