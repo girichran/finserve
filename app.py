@@ -19,7 +19,7 @@ from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
-
+load_dotenv("/etc/secrets/.env")
 load_dotenv()
 
 try:
@@ -3757,6 +3757,7 @@ if __name__ == "__main__":
     init_db()
     debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
     app.run(debug=debug_mode)
+
 
 
 
