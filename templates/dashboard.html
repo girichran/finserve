@@ -5,13 +5,27 @@
     <title>Dashboard | FinServe</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="bg-light">
+<body class="bg-light dashboard-page">
 
-<nav class="navbar navbar-dark bg-dark px-4">
-    <span class="navbar-brand">FinServe Dashboard</span>
-    <button class="btn btn-outline-light" onclick="logout()">Logout</button>
+<nav class="dashboard-nav">
+    <div class="container dashboard-nav-inner">
+        <a class="dashboard-brand" href="/dashboard">FinServe</a>
+        <div class="dashboard-main-links">
+            <a href="#overview">Overview</a>
+            <a href="#market-pulse">Market Pulse</a>
+            <a href="#watchlist-section">Watchlist</a>
+            <a href="#recommendations-section">Recommendations</a>
+            <a href="/dashboard/performance">Performance</a>
+        </div>
+        <div class="dashboard-user-actions">
+            <button class="btn btn-sm btn-outline-light" onclick="window.location.href='/dashboard/profile'">Profile</button>
+            <button class="btn btn-sm btn-outline-light" onclick="logout()">Logout</button>
+        </div>
+    </div>
 </nav>
 
 <div class="container mt-4 mb-5">
@@ -21,7 +35,7 @@
         </div>
     </div>
 
-    <h3 class="mb-4 interactive-heading">Welcome back, {{ user.name }}</h3>
+    <h3 id="overview" class="mb-4 interactive-heading">Welcome back, {{ user.name }}</h3>
 
     <div class="row g-3 mb-4">
         <div class="col-md-3">
@@ -58,7 +72,256 @@
         </div>
     </div>
 
-    <div class="card shadow-sm mb-4">
+    <div class="row g-3 mb-2">
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6>Unrealized P/L</h6>
+                    <h5 class="{{ 'text-success' if portfolio.unrealized_pl >= 0 else 'text-danger' }}">{{ portfolio.unrealized_pl }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6>Realized P/L</h6>
+                    <h5 class="{{ 'text-success' if portfolio.realized_pl >= 0 else 'text-danger' }}">{{ portfolio.realized_pl }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6>Total P/L</h6>
+                    <h5 class="{{ 'text-success' if portfolio.total_pl >= 0 else 'text-danger' }}">{{ portfolio.total_pl }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p class="text-muted small mb-4">Last price update: <span id="lastPriceUpdate">{{ portfolio.last_updated }}</span></p>
+
+    <div class="dashboard-shortcuts mb-3">
+        <a class="shortcut-pill active" href="#overview">Overview</a>
+        <a class="shortcut-pill" href="#market-pulse">Market Pulse</a>
+        <a class="shortcut-pill" href="#watchlist-section">Watchlist</a>
+        <a class="shortcut-pill" href="#recommendations-section">Recommendations</a>
+        <a class="shortcut-pill" href="#market-reports-section">Market Reports</a>
+        <a class="shortcut-pill" href="#insights-section">News & Calendar</a>
+        <a class="shortcut-pill" href="#holdings-section">Holdings</a>
+        <a class="shortcut-pill" href="#transactions-section">Transactions</a>
+        <a class="shortcut-pill" href="#rebalance-section">Rebalance</a>
+        <a class="shortcut-pill" href="/dashboard/performance">Performance Charts</a>
+    </div>
+
+    <div id="market-pulse" class="card shadow-sm mb-4 dashboard-card">
+        <div class="card-header fw-bold interactive-heading">Market Pulse</div>
+        <div class="card-body">
+            <div class="top-movers-wrap mb-3">
+                <div id="topMoversTrack" class="top-movers-track">
+                    <span class="mover-chip">Loading top movers...</span>
+                </div>
+            </div>
+            <div id="sectorHeatmap" class="sector-heatmap-grid">
+                <div class="text-muted">Loading sector heatmap...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="market-reports-section" class="card shadow-sm mb-4 dashboard-card">
+        <div class="card-header fw-bold interactive-heading">Market Reports For You</div>
+        <div class="card-body">
+            {% for report in market_reports %}
+            <details class="border rounded p-3 mb-2">
+                <summary class="d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold">{{ report.title }}</span>
+                    <small class="text-muted">{{ report.created_at }}</small>
+                </summary>
+                <div class="mt-2">
+                    {% if report.summary %}
+                    <p class="mb-2"><strong>Summary:</strong> {{ report.summary }}</p>
+                    {% endif %}
+                    <p class="mb-0" style="white-space: pre-wrap;">{{ report.content }}</p>
+                </div>
+            </details>
+            {% else %}
+            <div class="text-muted">No market reports available yet.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="recommendations-section" class="card shadow-sm mb-4 dashboard-card">
+        <div class="card-header fw-bold interactive-heading">Stock Recommendations For You</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Symbol</th>
+                            <th>Action</th>
+                            <th>Entry</th>
+                            <th>Target</th>
+                            <th>Stop Loss</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in recommendations %}
+                        <tr>
+                            <td>{{ r.created_at }}</td>
+                            <td>{{ r.symbol }}</td>
+                            <td>
+                                <span class="badge {% if r.action == 'BUY' %}bg-primary{% elif r.action == 'SELL' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                    {{ r.action }}
+                                </span>
+                            </td>
+                            <td>{{ r.entry_price if r.entry_price is not none else '-' }}</td>
+                            <td>{{ r.target_price if r.target_price is not none else '-' }}</td>
+                            <td>{{ r.stop_loss if r.stop_loss is not none else '-' }}</td>
+                            <td>{{ r.note }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">No recommendations yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="subscription-section" class="card shadow-sm mb-4 dashboard-card">
+        <div class="card-header fw-bold interactive-heading">Recommendation Subscription Plans</div>
+        <div class="card-body">
+            {% if active_subscription and active_subscription.status == "PAID" %}
+            <div class="alert alert-success py-2">
+                Active Plan: <strong>{{ active_subscription.plan_name }}</strong> |
+                Valid till: <strong>{{ active_subscription.ends_at }}</strong>
+            </div>
+            {% endif %}
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <div class="plan-card h-100">
+                        <div class="plan-name">Starter (Retail)</div>
+                        <div class="plan-price">₹499<span>/month</span></div>
+                        <ul class="plan-features">
+                            <li>8-12 stock recommendations/month</li>
+                            <li>Entry, target, stop-loss levels</li>
+                            <li>Watchlist updates</li>
+                            <li>Weekly summary report</li>
+                        </ul>
+                        <button class="btn btn-outline-primary w-100" onclick="startSubscriptionCheckout('STARTER_MONTHLY')">Choose Starter</button>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="plan-card plan-card-featured h-100">
+                        <div class="plan-badge">Popular</div>
+                        <div class="plan-name">Pro Trader</div>
+                        <div class="plan-price">₹1,499<span>/month</span></div>
+                        <ul class="plan-features">
+                            <li>25-40 recommendations/month</li>
+                            <li>Intraday + swing stock ideas</li>
+                            <li>Priority alerts (email/telegram)</li>
+                            <li>Risk-reward setup per call</li>
+                            <li>Market + economic event notes</li>
+                        </ul>
+                        <button class="btn btn-primary w-100" onclick="startSubscriptionCheckout('PRO_MONTHLY')">Choose Pro</button>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="plan-card h-100">
+                        <div class="plan-name">Elite Advisory</div>
+                        <div class="plan-price">₹4,999<span>/month</span></div>
+                        <ul class="plan-features">
+                            <li>All Pro features included</li>
+                            <li>Personalized portfolio review</li>
+                            <li>Position sizing guidance</li>
+                            <li>1:1 monthly strategy call</li>
+                            <li>Priority support</li>
+                        </ul>
+                        <button class="btn btn-outline-dark w-100" onclick="startSubscriptionCheckout('ELITE_MONTHLY')">Choose Elite</button>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 small text-muted">
+                Disclaimer: Markets are subject to risk. Past performance is not a guarantee of future returns.
+                Recommendations are for research and educational purposes.
+            </div>
+        </div>
+    </div>
+
+    <div id="insights-section" class="card shadow-sm mb-4 dashboard-card">
+        <div class="card-header fw-bold interactive-heading d-flex justify-content-between align-items-center">
+            <span>Watchlist News & Economic Calendar</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="loadDashboardInsights()">Refresh</button>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-2">
+                Tracking:
+                <span id="insightSymbols">{{ (insight_symbols or [])|join(", ") if (insight_symbols or []) else "No watchlist symbols yet" }}</span>
+            </p>
+            {% if insights_error == "yfinance_not_installed" %}
+            <div class="alert alert-warning py-2 mb-3">Install yfinance to fetch live watchlist news and earnings events.</div>
+            {% endif %}
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <h6 class="mb-2">News for Your Watchlist</h6>
+                    <div id="watchNewsList" class="insight-news-list">
+                        {% if watch_news %}
+                            {% for item in watch_news %}
+                            <a class="insight-news-item" href="{{ item.url }}" target="_blank" rel="noopener noreferrer">
+                                <div class="insight-news-head">
+                                    <span class="badge bg-primary-subtle text-primary-emphasis">{{ item.symbol }}</span>
+                                    <small class="text-muted">{{ item.published_at }}</small>
+                                </div>
+                                <div class="insight-news-title">{{ item.title }}</div>
+                                <small class="text-muted">{{ item.source }}</small>
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-muted">No news yet for your watchlist symbols.</div>
+                        {% endif %}
+                    </div>
+                    <h6 class="mb-2 mt-3">Trending Market News</h6>
+                    <div id="trendingNewsList" class="insight-news-list">
+                        {% if trending_news %}
+                            {% for item in trending_news %}
+                            <a class="insight-news-item" href="{{ item.url }}" target="_blank" rel="noopener noreferrer">
+                                <div class="insight-news-head">
+                                    <span class="badge bg-info-subtle text-info-emphasis">MARKET</span>
+                                    <small class="text-muted">{{ item.published_at }}</small>
+                                </div>
+                                <div class="insight-news-title">{{ item.title }}</div>
+                                <small class="text-muted">{{ item.source }}</small>
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-muted">No trending market news available.</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <h6 class="mb-2">Economic Calendar</h6>
+                    <div id="economicCalendar" class="insight-events-list">
+                        {% if economic_events %}
+                            {% for e in economic_events %}
+                            <div class="insight-event-item">
+                                <div><strong>{{ e.date }}</strong></div>
+                                <div>{{ e.title }}</div>
+                                <small class="text-muted">{{ e.type }}{% if e.symbol %} - {{ e.symbol }}{% endif %}</small>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-muted">No upcoming events available.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="holdings-section" class="card shadow-sm mb-4 dashboard-card">
         <div class="card-header fw-bold interactive-heading">Your Holdings</div>
         <div class="card-body">
             <div class="table-responsive">
@@ -98,7 +361,7 @@
         </div>
     </div>
 
-    <div class="card shadow-sm mb-4">
+    <div id="rebalance-section" class="card shadow-sm mb-4 dashboard-card">
         <div class="card-header fw-bold interactive-heading">Rebalancing Assistant</div>
         <div class="card-body">
             <div class="row g-2 mb-3">
@@ -143,7 +406,7 @@
         </div>
     </div>
 
-    <div class="card shadow-sm mb-4">
+    <div id="watchlist-section" class="card shadow-sm mb-4 dashboard-card">
         <div class="card-header fw-bold interactive-heading">Watchlist</div>
         <div class="card-body">
             <div class="row g-2 mb-3">
@@ -294,7 +557,7 @@
         </div>
     </div>
 
-    <div class="card shadow-sm">
+    <div id="transactions-section" class="card shadow-sm dashboard-card">
         <div class="card-header fw-bold interactive-heading">Transaction History</div>
         <div class="card-body">
             <div class="row g-2 mb-3">
@@ -609,6 +872,353 @@ function loadMarketIndices() {
     .catch(() => renderIndicesTicker([]));
 }
 
+function buildSparklineSVG(points) {
+    if (!points || points.length < 2) return "";
+    const width = 72;
+    const height = 22;
+    const pad = 2;
+    const min = Math.min(...points);
+    const max = Math.max(...points);
+    const span = max - min || 1;
+
+    const poly = points.map((p, i) => {
+        const x = pad + (i * ((width - pad * 2) / (points.length - 1)));
+        const y = height - pad - (((p - min) / span) * (height - pad * 2));
+        return `${x.toFixed(2)},${y.toFixed(2)}`;
+    }).join(" ");
+
+    return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" aria-hidden="true"><polyline points="${poly}" /></svg>`;
+}
+
+function renderTopMoversTicker(items) {
+    const track = document.getElementById("topMoversTrack");
+    if (!items || !items.length) {
+        track.innerHTML = '<span class="mover-chip">Unable to load top movers</span>';
+        return;
+    }
+
+    const chips = items.map(item => {
+        const pct = item.change_pct >= 0 ? `+${item.change_pct}` : `${item.change_pct}`;
+        const trendClass = item.trend === "up" ? "up" : (item.trend === "down" ? "down" : "flat");
+        const spark = buildSparklineSVG(item.sparkline || []);
+        return `<span class="mover-chip ${trendClass}"><strong>${item.symbol}</strong> ${pct}% ${spark}</span>`;
+    });
+
+    track.innerHTML = `${chips.join("")}${chips.join("")}`;
+}
+
+function renderSectorHeatmap(sectors) {
+    const root = document.getElementById("sectorHeatmap");
+    const names = Object.keys(sectors || {});
+    if (!names.length) {
+        root.innerHTML = '<div class="text-muted">No sector heatmap data available.</div>';
+        return;
+    }
+
+    root.innerHTML = names.map(sector => {
+        const blocks = (sectors[sector] || []).map(item => {
+            const pctText = item.change_pct === null || item.change_pct === undefined
+                ? "-"
+                : `${item.change_pct >= 0 ? "+" : ""}${item.change_pct}%`;
+            const cls = item.trend === "up" ? "up" : (item.trend === "down" ? "down" : "flat");
+            return `<div class="heat-cell ${cls}" title="${item.label} (${item.symbol})">
+                        <div class="heat-symbol">${item.symbol}</div>
+                        <div class="heat-price">${item.price}</div>
+                        <div class="heat-change">${pctText}</div>
+                    </div>`;
+        }).join("");
+
+        return `<section class="sector-card">
+                    <h6>${sector}</h6>
+                    <div class="sector-cells">${blocks || '<div class="text-muted">No data</div>'}</div>
+                </section>`;
+    }).join("");
+}
+
+function loadMarketOverview() {
+    fetch("/market/overview")
+    .then(res => res.json())
+    .then(data => {
+        if (data.status !== "success") {
+            renderTopMoversTicker([]);
+            renderSectorHeatmap({});
+            return;
+        }
+        renderTopMoversTicker(data.top_movers || []);
+        renderSectorHeatmap(data.sectors || {});
+    })
+    .catch(() => {
+        renderTopMoversTicker([]);
+        renderSectorHeatmap({});
+    });
+}
+
+function renderInsightSymbols(symbols) {
+    const el = document.getElementById("insightSymbols");
+    if (!el) return;
+    if (!symbols || !symbols.length) {
+        el.textContent = "No watchlist symbols yet";
+        return;
+    }
+    el.textContent = symbols.join(", ");
+}
+
+function renderWatchNews(items) {
+    const root = document.getElementById("watchNewsList");
+    if (!root) return;
+    if (!items || !items.length) {
+        root.innerHTML = '<div class="text-muted">No news yet for your watchlist symbols.</div>';
+        return;
+    }
+
+    root.innerHTML = items.map(item => `
+        <a class="insight-news-item" href="${item.url}" target="_blank" rel="noopener noreferrer">
+            <div class="insight-news-head">
+                <span class="badge bg-primary-subtle text-primary-emphasis">${item.symbol || "-"}</span>
+                <small class="text-muted">${item.published_at || "-"}</small>
+            </div>
+            <div class="insight-news-title">${item.title || "Untitled"}</div>
+            <small class="text-muted">${item.source || "News"}</small>
+        </a>
+    `).join("");
+}
+
+function renderTrendingNews(items) {
+    const root = document.getElementById("trendingNewsList");
+    if (!root) return;
+    if (!items || !items.length) {
+        root.innerHTML = '<div class="text-muted">No trending market news available.</div>';
+        return;
+    }
+
+    root.innerHTML = items.map(item => `
+        <a class="insight-news-item" href="${item.url}" target="_blank" rel="noopener noreferrer">
+            <div class="insight-news-head">
+                <span class="badge bg-info-subtle text-info-emphasis">MARKET</span>
+                <small class="text-muted">${item.published_at || "-"}</small>
+            </div>
+            <div class="insight-news-title">${item.title || "Untitled"}</div>
+            <small class="text-muted">${item.source || "Market News"}</small>
+        </a>
+    `).join("");
+}
+
+function renderEconomicCalendar(items) {
+    const root = document.getElementById("economicCalendar");
+    if (!root) return;
+    if (!items || !items.length) {
+        root.innerHTML = '<div class="text-muted">No upcoming events available.</div>';
+        return;
+    }
+
+    root.innerHTML = items.map(event => `
+        <div class="insight-event-item">
+            <div><strong>${event.date || "-"}</strong></div>
+            <div>${event.title || "-"}</div>
+            <small class="text-muted">${event.type || "Event"}${event.symbol ? ` - ${event.symbol}` : ""}</small>
+        </div>
+    `).join("");
+}
+
+function loadDashboardInsights() {
+    fetch("/dashboard/insights")
+    .then(res => res.json())
+    .then(data => {
+        if (data.status !== "success") {
+            return;
+        }
+        renderInsightSymbols(data.symbols || []);
+        renderWatchNews(data.news || []);
+        renderTrendingNews(data.trending_news || []);
+        renderEconomicCalendar(data.events || []);
+    })
+    .catch(() => {});
+}
+
+function startSubscriptionCheckout(planCode) {
+    fetch("/payments/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan_code: planCode })
+    })
+    .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || data.status !== "success") {
+            alert(data.message || "Unable to start payment.");
+            return null;
+        }
+        return data;
+    })
+    .then((orderData) => {
+        if (!orderData) return;
+        if (typeof Razorpay === "undefined") {
+            alert("Razorpay SDK not loaded.");
+            return;
+        }
+
+        const options = {
+            key: orderData.key,
+            amount: orderData.amount,
+            currency: orderData.currency,
+            name: "FinServe",
+            description: orderData.plan_name,
+            order_id: orderData.order_id,
+            prefill: {
+                name: orderData.user_name || "",
+                email: orderData.user_email || ""
+            },
+            theme: { color: "#0d6efd" },
+            handler: function (response) {
+                fetch("/payments/verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(response)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message || "Payment verification completed.");
+                    if (data.status === "success") {
+                        window.location.reload();
+                    }
+                })
+                .catch(() => alert("Payment verification failed."));
+            }
+        };
+        const rzp = new Razorpay(options);
+        rzp.on("payment.failed", function (resp) {
+            alert((resp.error && resp.error.description) || "Payment failed.");
+        });
+        rzp.open();
+    })
+    .catch(() => alert("Payment initialization failed."));
+}
+
+function renderPerformanceCharts() {
+    if (typeof Chart === "undefined") return;
+
+    const portfolioData = {{ portfolio_perf|tojson }};
+    const recData = {{ recommendation_perf|tojson }};
+
+    const pCanvas = document.getElementById("portfolioPerfChart");
+    if (pCanvas) {
+        if (!portfolioData.labels || !portfolioData.labels.length) {
+            const ctx = pCanvas.getContext("2d");
+            ctx.font = "14px Segoe UI";
+            ctx.fillStyle = "#6c757d";
+            ctx.fillText("No portfolio transaction history available yet.", 12, 24);
+        } else {
+            new Chart(pCanvas, {
+                type: "line",
+                data: {
+                    labels: portfolioData.labels,
+                    datasets: [
+                        {
+                            label: "Net Invested",
+                            data: portfolioData.net_invested,
+                            borderColor: "#0d6efd",
+                            backgroundColor: "rgba(13,110,253,0.12)",
+                            fill: true,
+                            tension: 0.25,
+                            pointRadius: 2
+                        },
+                        {
+                            label: "Current Value",
+                            data: portfolioData.current_value || [],
+                            borderColor: "#198754",
+                            backgroundColor: "rgba(25,135,84,0.08)",
+                            fill: false,
+                            tension: 0.2,
+                            pointRadius: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: "top" },
+                        tooltip: {
+                            callbacks: {
+                                title: function (items) {
+                                    if (!items || !items.length) return "";
+                                    const idx = items[0].dataIndex;
+                                    return portfolioData.labels[idx] || "";
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 8,
+                                callback: function (value, index) {
+                                    const label = portfolioData.labels[index];
+                                    if (!label) return "";
+                                    const parts = String(label).split("-");
+                                    if (parts.length < 2) return label;
+                                    const year = parts[0];
+                                    const month = Number(parts[1]) - 1;
+                                    const dt = new Date(Number(year), month, 1);
+                                    const monthYear = dt.toLocaleDateString("en-IN", {
+                                        month: "short",
+                                        year: "numeric"
+                                    });
+
+                                    if (index === 0) return monthYear;
+                                    const prev = portfolioData.labels[index - 1] || "";
+                                    const prevParts = String(prev).split("-");
+                                    if (prevParts.length < 2) return monthYear;
+                                    if (prevParts[0] !== parts[0] || prevParts[1] !== parts[1]) return monthYear;
+                                    return "";
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    const rCanvas = document.getElementById("recommendationPerfChart");
+    if (rCanvas) {
+        if (!recData.items || !recData.items.length) {
+            const ctx = rCanvas.getContext("2d");
+            ctx.font = "14px Segoe UI";
+            ctx.fillStyle = "#6c757d";
+            ctx.fillText("No recommendation performance data yet.", 12, 24);
+        } else {
+            const labels = recData.items.map(i => i.symbol);
+            const values = recData.items.map(i => i.return_pct);
+            const colors = values.map(v => v >= 0 ? "rgba(13,110,253,0.72)" : "rgba(220,53,69,0.72)");
+
+            new Chart(rCanvas, {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Return %",
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            title: { display: true, text: "Return %" }
+                        },
+                        x: { ticks: { maxRotation: 0, minRotation: 0 } }
+                    }
+                }
+            });
+        }
+    }
+}
+
 function loadWatchlistStock(symbol, assetType) {
     selectedOrderSymbol = symbol;
     selectedOrderAssetType = assetType || "Equity";
@@ -725,8 +1335,61 @@ function placeWatchOrder() {
     .catch(() => alert("Failed to place order"));
 }
 
+function autoSyncPricesOnLoad() {
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const syncKey = "finserve_auto_sync_date";
+    if (sessionStorage.getItem(syncKey) === todayKey) {
+        return;
+    }
+
+    fetch("/prices/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "live" })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            sessionStorage.setItem(syncKey, todayKey);
+            window.location.reload();
+        }
+    })
+    .catch(() => {});
+}
+
+function reorderDashboardSections() {
+    const preferredOrder = [
+        "market-pulse",
+        "watchlist-section",
+        "recommendations-section",
+        "market-reports-section",
+        "subscription-section",
+        "insights-section",
+        "holdings-section",
+        "transactions-section",
+        "rebalance-section"
+    ];
+
+    const container = document.querySelector("body .container.mt-4.mb-5");
+    if (!container) return;
+
+    preferredOrder.forEach((id) => {
+        const section = document.getElementById(id);
+        if (section) {
+            container.appendChild(section);
+        }
+    });
+}
+
+reorderDashboardSections();
+autoSyncPricesOnLoad();
 loadMarketIndices();
 setInterval(loadMarketIndices, 60000);
+loadMarketOverview();
+setInterval(loadMarketOverview, 120000);
+loadDashboardInsights();
+setInterval(loadDashboardInsights, 180000);
+renderPerformanceCharts();
 
 const watchSymbolInput = document.getElementById("watchSymbol");
 if (watchSymbolInput) {
@@ -746,6 +1409,20 @@ if (watchSymbolInput) {
         setTimeout(hideWatchSuggestions, 120);
     });
 }
+
+document.querySelectorAll(".dashboard-shortcuts a, .dashboard-main-links a").forEach((link) => {
+    link.addEventListener("click", (event) => {
+        const href = link.getAttribute("href") || "";
+        if (!href.startsWith("#")) return;
+        const target = document.querySelector(href);
+        if (!target) return;
+        event.preventDefault();
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.querySelectorAll(".dashboard-shortcuts .shortcut-pill").forEach((pill) => {
+            pill.classList.toggle("active", pill.getAttribute("href") === href);
+        });
+    });
+});
 </script>
 
 </body>
