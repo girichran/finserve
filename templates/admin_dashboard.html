@@ -44,6 +44,251 @@
         </div>
     </div>
 
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-bold interactive-heading">Send Stock Recommendations</div>
+        <div class="card-body">
+            <div class="row g-2 mb-3">
+                <div class="col-md-2">
+                    <input id="recSymbol" class="form-control" placeholder="Symbol (e.g. INFY.NS)">
+                </div>
+                <div class="col-md-2">
+                    <select id="recAction" class="form-select">
+                        <option value="BUY">BUY</option>
+                        <option value="HOLD">HOLD</option>
+                        <option value="SELL">SELL</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input id="recEntryPrice" class="form-control" type="number" step="0.01" placeholder="Entry Price">
+                </div>
+                <div class="col-md-2">
+                    <input id="recTargetPrice" class="form-control" type="number" step="0.01" placeholder="Target Price">
+                </div>
+                <div class="col-md-2">
+                    <input id="recStopLoss" class="form-control" type="number" step="0.01" placeholder="Stop Loss">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" onclick="sendRecommendation()">Send</button>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <textarea id="recNote" class="form-control" rows="2" placeholder="Recommendation note / reasoning"></textarea>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Select Users</h6>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="selectAllUsers(true)">Select All</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="selectAllUsers(false)">Clear</button>
+                </div>
+            </div>
+
+            <div class="border rounded p-2" style="max-height: 220px; overflow-y: auto;">
+                <div class="row g-2">
+                    {% for u in users %}
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-check-label border rounded p-2 d-block">
+                            <input class="form-check-input me-1 rec-user-checkbox" type="checkbox" value="{{ u.id }}">
+                            <span class="fw-semibold">{{ u.name }}</span>
+                            <small class="d-block text-muted">{{ u.email }}</small>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-bold interactive-heading">Sent Recommendations</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Symbol</th>
+                            <th>Manage</th>
+                            <th>Entry</th>
+                            <th>Target</th>
+                            <th>Stop Loss</th>
+                            <th>Users</th>
+                            <th>Note</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in admin_recommendations %}
+                        <tr>
+                            <td>{{ r.created_at }}</td>
+                            <td>{{ r.symbol }}</td>
+                            <td>
+                                <span class="badge {% if r.action == 'BUY' %}bg-primary{% elif r.action == 'SELL' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                    {{ r.action }}
+                                </span>
+                            </td>
+                            <td>{{ r.entry_price if r.entry_price is not none else '-' }}</td>
+                            <td>{{ r.target_price if r.target_price is not none else '-' }}</td>
+                            <td>{{ r.stop_loss if r.stop_loss is not none else '-' }}</td>
+                            <td>{{ r.target_count }}</td>
+                            <td>{{ r.note }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteRecommendation({{ r.id }})">Delete</button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted">No recommendations sent yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-bold interactive-heading">Send Market Reports</div>
+        <div class="card-body">
+            <div class="row g-2 mb-2">
+                <div class="col-md-9">
+                    <input id="reportTitle" class="form-control" placeholder="Report title (e.g. Weekly Market Outlook)">
+                </div>
+                <div class="col-md-3 d-flex justify-content-end">
+                    <button class="btn btn-primary w-100" onclick="sendMarketReport()">Send Report</button>
+                </div>
+            </div>
+            <div class="mb-2">
+                <textarea id="reportSummary" class="form-control" rows="2" placeholder="Short summary (optional)"></textarea>
+            </div>
+            <div class="mb-3">
+                <textarea id="reportContent" class="form-control" rows="5" placeholder="Full report content"></textarea>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Select Users</h6>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="selectAllReportUsers(true)">Select All</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="selectAllReportUsers(false)">Clear</button>
+                </div>
+            </div>
+
+            <div class="border rounded p-2 mb-3" style="max-height: 220px; overflow-y: auto;">
+                <div class="row g-2">
+                    {% for u in users %}
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-check-label border rounded p-2 d-block">
+                            <input class="form-check-input me-1 report-user-checkbox" type="checkbox" value="{{ u.id }}">
+                            <span class="fw-semibold">{{ u.name }}</span>
+                            <small class="d-block text-muted">{{ u.email }}</small>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Title</th>
+                            <th>Summary</th>
+                            <th>Users</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in admin_reports %}
+                        <tr>
+                            <td>{{ r.created_at }}</td>
+                            <td>{{ r.title }}</td>
+                            <td>{{ r.summary }}</td>
+                            <td>{{ r.target_count }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteMarketReport({{ r.id }})">Delete</button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No market reports sent yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-bold interactive-heading">Blog Post Manager</div>
+        <div class="card-body">
+            <div class="row g-2 mb-2">
+                <div class="col-md-8">
+                    <input id="blogTitle" class="form-control" placeholder="Blog title">
+                </div>
+                <div class="col-md-4 d-flex align-items-center">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="blogPublished" checked>
+                        <label class="form-check-label" for="blogPublished">Publish now</label>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-2">
+                <textarea id="blogExcerpt" class="form-control" rows="2" placeholder="Short excerpt (optional)"></textarea>
+            </div>
+            <div class="mb-3">
+                <textarea id="blogContent" class="form-control" rows="5" placeholder="Full blog content"></textarea>
+            </div>
+            <div class="d-flex justify-content-end">
+                <button class="btn btn-primary" onclick="createBlogPost()">Save Blog Post</button>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Excerpt</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in admin_blogs %}
+                        <tr>
+                            <td>{{ b.created_at }}</td>
+                            <td>{{ b.title }}</td>
+                            <td>
+                                {% if b.is_published %}
+                                <span class="badge bg-success">Published</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Draft</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ b.excerpt }}</td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-warning" onclick="toggleBlogPost({{ b.id }})">Toggle</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteBlogPost({{ b.id }})">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No blog posts yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div class="card shadow-sm">
         <div class="card-header fw-bold interactive-heading">All Users</div>
         <div class="card-body">
@@ -54,10 +299,12 @@
                             <th>ID</th>
                             <th>Name</th>
                             <th>Email</th>
+                            <th>Status</th>
                             <th>Invested</th>
                             <th>Current Value</th>
                             <th>Transactions</th>
                             <th>Watchlist</th>
+                            <th>Controls</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -66,14 +313,31 @@
                             <td>{{ u.id }}</td>
                             <td>{{ u.name }}</td>
                             <td>{{ u.email }}</td>
+                            <td>
+                                {% if u.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Deactivated</span>
+                                {% endif %}
+                            </td>
                             <td>{{ "%.2f"|format(u.invested_value or 0) }}</td>
                             <td>{{ "%.2f"|format(u.current_value or 0) }}</td>
                             <td>{{ u.txn_count }}</td>
                             <td>{{ u.watchlist_count }}</td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    {% if u.is_active %}
+                                    <button class="btn btn-sm btn-outline-warning" onclick='deactivateUser({{ u.id }}, {{ u.email|tojson }})'>Deactivate</button>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-outline-success" onclick="activateUser({{ u.id }})">Activate</button>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-outline-danger" onclick='deleteUser({{ u.id }}, {{ u.email|tojson }})'>Delete</button>
+                                </div>
+                            </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="7" class="text-center text-muted">No users found.</td>
+                            <td colspan="9" class="text-center text-muted">No users found.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -84,6 +348,232 @@
 </div>
 
 <script>
+function getSelectedUserIds() {
+    return Array.from(document.querySelectorAll(".rec-user-checkbox:checked"))
+        .map((el) => Number(el.value))
+        .filter((v) => Number.isInteger(v) && v > 0);
+}
+
+function selectAllUsers(flag) {
+    document.querySelectorAll(".rec-user-checkbox").forEach((el) => {
+        el.checked = flag;
+    });
+}
+
+function getSelectedReportUserIds() {
+    return Array.from(document.querySelectorAll(".report-user-checkbox:checked"))
+        .map((el) => Number(el.value))
+        .filter((v) => Number.isInteger(v) && v > 0);
+}
+
+function selectAllReportUsers(flag) {
+    document.querySelectorAll(".report-user-checkbox").forEach((el) => {
+        el.checked = flag;
+    });
+}
+
+function sendRecommendation() {
+    const symbol = (document.getElementById("recSymbol").value || "").trim().toUpperCase();
+    const action = document.getElementById("recAction").value;
+    const entryPrice = document.getElementById("recEntryPrice").value;
+    const targetPrice = document.getElementById("recTargetPrice").value;
+    const stopLoss = document.getElementById("recStopLoss").value;
+    const note = (document.getElementById("recNote").value || "").trim();
+    const userIds = getSelectedUserIds();
+
+    if (!symbol) {
+        alert("Enter a stock symbol.");
+        return;
+    }
+    if (!userIds.length) {
+        alert("Select at least one user.");
+        return;
+    }
+
+    fetch("/admin/recommendations/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            symbol: symbol,
+            action: action,
+            entry_price: entryPrice,
+            target_price: targetPrice,
+            stop_loss: stopLoss,
+            note: note,
+            user_ids: userIds
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Completed");
+        if (data.status === "success") {
+            window.location.reload();
+        }
+    })
+    .catch(() => alert("Failed to send recommendation"));
+}
+
+function deleteRecommendation(recommendationId) {
+    if (!confirm("Delete this recommendation? This will remove it for all targeted users.")) {
+        return;
+    }
+
+    fetch(`/admin/recommendations/delete/${recommendationId}`, {
+        method: "POST"
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Completed");
+        if (data.status === "success") {
+            window.location.reload();
+        }
+    })
+    .catch(() => alert("Failed to delete recommendation"));
+}
+
+function sendMarketReport() {
+    const title = (document.getElementById("reportTitle").value || "").trim();
+    const summary = (document.getElementById("reportSummary").value || "").trim();
+    const content = (document.getElementById("reportContent").value || "").trim();
+    const userIds = getSelectedReportUserIds();
+
+    if (!title) {
+        alert("Enter a report title.");
+        return;
+    }
+    if (!content) {
+        alert("Enter report content.");
+        return;
+    }
+    if (!userIds.length) {
+        alert("Select at least one user.");
+        return;
+    }
+
+    fetch("/admin/reports/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            title: title,
+            summary: summary,
+            content: content,
+            user_ids: userIds
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Completed");
+        if (data.status === "success") {
+            window.location.reload();
+        }
+    })
+    .catch(() => alert("Failed to send market report"));
+}
+
+function deleteMarketReport(reportId) {
+    if (!confirm("Delete this market report? This removes it for all targeted users.")) {
+        return;
+    }
+
+    fetch(`/admin/reports/delete/${reportId}`, {
+        method: "POST"
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Completed");
+        if (data.status === "success") {
+            window.location.reload();
+        }
+    })
+    .catch(() => alert("Failed to delete market report"));
+}
+
+function createBlogPost() {
+    const title = (document.getElementById("blogTitle").value || "").trim();
+    const excerpt = (document.getElementById("blogExcerpt").value || "").trim();
+    const content = (document.getElementById("blogContent").value || "").trim();
+    const isPublished = document.getElementById("blogPublished").checked;
+
+    if (!title || !content) {
+        alert("Title and content are required.");
+        return;
+    }
+
+    fetch("/admin/blogs/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            title: title,
+            excerpt: excerpt,
+            content: content,
+            is_published: isPublished
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Completed");
+        if (data.status === "success") window.location.reload();
+    })
+    .catch(() => alert("Failed to save blog post"));
+}
+
+function toggleBlogPost(blogId) {
+    fetch(`/admin/blogs/${blogId}/toggle`, { method: "POST" })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Completed");
+        if (data.status === "success") window.location.reload();
+    })
+    .catch(() => alert("Failed to update blog status"));
+}
+
+function deleteBlogPost(blogId) {
+    if (!confirm("Delete this blog post?")) return;
+    fetch(`/admin/blogs/${blogId}/delete`, { method: "POST" })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Completed");
+        if (data.status === "success") window.location.reload();
+    })
+    .catch(() => alert("Failed to delete blog post"));
+}
+
+function deactivateUser(userId, email) {
+    if (!confirm(`Deactivate user ${email}?`)) {
+        return;
+    }
+    fetch(`/admin/users/${userId}/deactivate`, { method: "POST" })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Completed");
+        if (data.status === "success") window.location.reload();
+    })
+    .catch(() => alert("Failed to deactivate user"));
+}
+
+function activateUser(userId) {
+    fetch(`/admin/users/${userId}/activate`, { method: "POST" })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Completed");
+        if (data.status === "success") window.location.reload();
+    })
+    .catch(() => alert("Failed to activate user"));
+}
+
+function deleteUser(userId, email) {
+    if (!confirm(`Delete user ${email}? This will remove all their portfolios, assets, watchlist, and transactions.`)) {
+        return;
+    }
+    fetch(`/admin/users/${userId}/delete`, { method: "POST" })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Completed");
+        if (data.status === "success") window.location.reload();
+    })
+    .catch(() => alert("Failed to delete user"));
+}
+
 function logout() {
     fetch("/logout")
     .then(res => res.json())
