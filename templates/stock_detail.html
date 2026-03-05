@@ -114,6 +114,7 @@
                 </div>
                 <div class="col-md-5">
                     <p class="mb-0">Current Stop Loss: <strong id="currentStopLoss">-</strong></p>
+                    <p class="mb-0 small" id="stopLossTriggerStatus">Trigger Status: <span class="text-muted">Not triggered</span></p>
                 </div>
             </div>
         </div>
@@ -223,6 +224,15 @@ function loadStopLoss() {
             document.getElementById('stopLossInput').value = data.stop_loss;
         } else {
             document.getElementById('currentStopLoss').textContent = '-';
+        }
+
+        const statusEl = document.getElementById('stopLossTriggerStatus');
+        if (statusEl) {
+            if (data.is_triggered) {
+                statusEl.innerHTML = `Trigger Status: <span class="text-danger">Triggered at ${data.triggered_price ?? '-'} on ${data.triggered_at ?? '-'}</span>`;
+            } else {
+                statusEl.innerHTML = 'Trigger Status: <span class="text-success">Active (not triggered)</span>';
+            }
         }
     })
     .catch(() => {});
@@ -357,3 +367,4 @@ setInterval(loadStockDetails, 60000);
 
 </body>
 </html>
+
