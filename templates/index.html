@@ -27,6 +27,7 @@
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
                 <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="#plans">Plans</a></li>
                 <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
                 <li class="nav-item">
                     <button class="btn btn-outline-light ms-3" data-bs-toggle="modal" data-bs-target="#authModal">
@@ -125,73 +126,88 @@
         <h2 class="text-center mb-5">Market Insights & Blogs</h2>
 
         <div class="row g-4">
-
-            <!-- Blog 1 -->
+            {% for b in blogs %}
             <div class="col-md-4">
                 <div class="card h-100 shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">
-                            Understanding Market Trends Using Technical Analysis
-                        </h5>
+                        <h5 class="card-title">{{ b.title }}</h5>
                         <p class="text-muted small mb-2">
-                            By Giri Charan | Jan 2026
+                            By <strong>Giri Charan</strong>, Technical Analyst | {{ b.created_at }}
                         </p>
                         <p class="card-text">
-                            Learn how technical indicators, price action, and volume
-                            analysis help identify market trends and trading
-                            opportunities.
+                            {{ b.excerpt if b.excerpt else (b.content[:180] ~ ('...' if b.content|length > 180 else '')) }}
                         </p>
-                        <a href="#" class="btn btn-outline-dark btn-sm">
-                            Read More
-                        </a>
+                        <a href="/blog/{{ b.id }}" class="btn btn-outline-dark btn-sm">Read More</a>
                     </div>
                 </div>
             </div>
-
-            <!-- Blog 2 -->
-            <div class="col-md-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            Risk Management Strategies Every Investor Must Know
-                        </h5>
-                        <p class="text-muted small mb-2">
-                            By Giri Charan | Jan 2026
-                        </p>
-                        <p class="card-text">
-                            Discover essential risk management techniques to protect
-                            capital, reduce losses, and improve long-term portfolio
-                            performance.
-                        </p>
-                        <a href="#" class="btn btn-outline-dark btn-sm">
-                            Read More
-                        </a>
-                    </div>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-light border text-center mb-0">
+                    No blog posts published yet.
                 </div>
             </div>
-
-            <!-- Blog 3 -->
-            <div class="col-md-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            Long-Term Investing vs Active Trading: What’s Right for You?
-                        </h5>
-                        <p class="text-muted small mb-2">
-                            By Giri Charan | Jan 2026
-                        </p>
-                        <p class="card-text">
-                            A practical comparison between long-term investing and
-                            active trading to help you choose the right strategy.
-                        </p>
-                        <a href="#" class="btn btn-outline-dark btn-sm">
-                            Read More
-                        </a>
-                    </div>
-                </div>
-            </div>
+            {% endfor %}
 
         </div>
+    </div>
+</section>
+
+<!-- SUBSCRIPTION PLANS -->
+<section id="plans" class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-2">Recommendation Subscription Plans</h2>
+        <p class="text-center text-muted mb-4">Choose a plan based on your trading style and support needs.</p>
+
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="plan-card h-100">
+                    <div class="plan-name">Starter (Retail)</div>
+                    <div class="plan-price">₹499<span>/month</span></div>
+                    <ul class="plan-features">
+                        <li>8-12 stock recommendations/month</li>
+                        <li>Entry, target, stop-loss levels</li>
+                        <li>Watchlist updates</li>
+                        <li>Weekly summary report</li>
+                    </ul>
+                    <button class="btn btn-outline-primary w-100" onclick="startSubscriptionCheckout('STARTER_MONTHLY')">Get Starter</button>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="plan-card plan-card-featured h-100">
+                    <div class="plan-badge">Popular</div>
+                    <div class="plan-name">Pro Trader</div>
+                    <div class="plan-price">₹1,499<span>/month</span></div>
+                    <ul class="plan-features">
+                        <li>25-40 recommendations/month</li>
+                        <li>Intraday + swing stock ideas</li>
+                        <li>Priority alerts (email/telegram)</li>
+                        <li>Risk-reward setup per call</li>
+                        <li>Market + economic event notes</li>
+                    </ul>
+                    <button class="btn btn-primary w-100" onclick="startSubscriptionCheckout('PRO_MONTHLY')">Get Pro</button>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="plan-card h-100">
+                    <div class="plan-name">Elite Advisory</div>
+                    <div class="plan-price">₹4,999<span>/month</span></div>
+                    <ul class="plan-features">
+                        <li>All Pro features included</li>
+                        <li>Personalized portfolio review</li>
+                        <li>Position sizing guidance</li>
+                        <li>1:1 monthly strategy call</li>
+                        <li>Priority support</li>
+                    </ul>
+                    <button class="btn btn-outline-dark w-100" onclick="startSubscriptionCheckout('ELITE_MONTHLY')">Get Elite</button>
+                </div>
+            </div>
+        </div>
+
+        <p class="small text-muted text-center mt-3 mb-0">
+            Disclaimer: Markets are subject to risk. Past performance is not a guarantee of future returns.
+            Recommendations are for research and educational purposes.
+        </p>
     </div>
 </section>
 
@@ -199,19 +215,96 @@
 
 <script>
 function submitForm() {
+    const nameEl = document.getElementById("name");
+    const emailEl = document.getElementById("email");
+    const messageEl = document.getElementById("message");
+
     fetch("/contact", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            name: document.getElementById("name").value,
-            email: document.getElementById("email").value,
-            message: document.getElementById("message").value
+            name: nameEl ? nameEl.value : "",
+            email: emailEl ? emailEl.value : "",
+            message: messageEl ? messageEl.value : ""
         })
     })
     .then(res => res.json())
-    .then(data => alert(data.message));
+    .then(data => {
+        alert(data.message);
+        if (nameEl) nameEl.value = "";
+        if (emailEl) emailEl.value = "";
+        if (messageEl) messageEl.value = "";
+    });
+}
+
+function startSubscriptionCheckout(planCode) {
+    fetch("/payments/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan_code: planCode })
+    })
+    .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || data.status !== "success") {
+            if (res.status === 401) {
+                const authModalEl = document.getElementById("authModal");
+                if (authModalEl) {
+                    const modal = bootstrap.Modal.getOrCreateInstance(authModalEl);
+                    modal.show();
+                }
+                alert(data.message || "Please login first.");
+                return null;
+            }
+            alert(data.message || "Unable to start payment.");
+            return null;
+        }
+        return data;
+    })
+    .then((orderData) => {
+        if (!orderData) return;
+        if (typeof Razorpay === "undefined") {
+            alert("Razorpay SDK not loaded.");
+            return;
+        }
+
+        const options = {
+            key: orderData.key,
+            amount: orderData.amount,
+            currency: orderData.currency,
+            name: "FinServe",
+            description: orderData.plan_name,
+            order_id: orderData.order_id,
+            prefill: {
+                name: orderData.user_name || "",
+                email: orderData.user_email || ""
+            },
+            theme: { color: "#0d6efd" },
+            handler: function (response) {
+                fetch("/payments/verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(response)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message || "Payment verification completed.");
+                    if (data.status === "success") {
+                        window.location.href = "/dashboard";
+                    }
+                })
+                .catch(() => alert("Payment verification failed."));
+            }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.on("payment.failed", function (resp) {
+            alert((resp.error && resp.error.description) || "Payment failed.");
+        });
+        rzp.open();
+    })
+    .catch(() => alert("Payment initialization failed."));
 }
 </script>
 
@@ -254,7 +347,7 @@ function submitForm() {
                         <strong>Working Hours:</strong><br>
                         Mon – Fri | 9:00 AM – 6:00 PM
                     </p>
-                    <a href="#" class="btn btn-outline-light mt-3 w-100">
+                    <a href="https://wa.me/9392762880?text=Hi%20FinServe%2C%20I%20want%20to%20book%20a%20free%20consultation." class="btn btn-outline-light mt-3 w-100" target="_blank" rel="noopener noreferrer">
                          <i class="bi bi-calendar-check me-2"></i>
                           Book Free Consultation
                     </a>
@@ -323,28 +416,31 @@ function submitForm() {
                 <div class="tab-content">
 
                     <div class="tab-pane fade show active" id="login">
-                        <input class="form-control mb-3" id="loginEmail" placeholder="Email">
-                        <input class="form-control mb-3" type="password" id="loginPassword" placeholder="Password">
+                        <input class="form-control mb-3" id="loginEmail" placeholder="Email" autocomplete="off">
+                        <input class="form-control mb-3" type="password" id="loginPassword" placeholder="Password" autocomplete="new-password">
                         <button type="button" class="btn btn-dark w-100" onclick="login()">Sign In</button>
 
                     </div>
 
                     <div class="tab-pane fade" id="adminLogin">
-                        <input class="form-control mb-3" id="adminEmail" placeholder="Admin Email">
-                        <input class="form-control mb-3" type="password" id="adminPassword" placeholder="Admin Password">
+                        <input class="form-control mb-3" id="adminEmail" placeholder="Admin Email" autocomplete="off">
+                        <input class="form-control mb-3" type="password" id="adminPassword" placeholder="Admin Password" autocomplete="new-password">
                         <button type="button" class="btn btn-danger w-100" onclick="adminLogin()">Admin Sign In</button>
                     </div>
 
                    <div class="tab-pane fade" id="register">
-    <input class="form-control mb-3" id="regName" placeholder="Full Name">
-    <input class="form-control mb-3" id="regEmail" placeholder="Email">
-    <input class="form-control mb-3" type="password" id="regPassword" placeholder="Password">
+    <input class="form-control mb-3" id="regName" placeholder="Full Name" autocomplete="off">
+    <input class="form-control mb-3" id="regEmail" placeholder="Email" autocomplete="off">
+    <input class="form-control mb-3" type="password" id="regPassword" placeholder="Password" autocomplete="new-password">
     <button type="button" class="btn btn-success w-100" onclick="register()">Create Account</button>
 </div>
 
                     <div class="tab-pane fade" id="forgot">
-                        <input class="form-control mb-3" placeholder="Registered Email">
-                        <button type="button" class="btn btn-warning w-100" onclick="forgotPassword()">Reset Password</button>
+                        <input id="forgotEmail" class="form-control mb-3" placeholder="Registered Email">
+                        <button type="button" class="btn btn-warning w-100 mb-3" onclick="forgotPassword()">Send OTP</button>
+                        <input id="forgotOtp" class="form-control mb-3" placeholder="Enter OTP">
+                        <input id="forgotNewPassword" class="form-control mb-3" type="password" placeholder="New Password">
+                        <button type="button" class="btn btn-dark w-100" onclick="resetPasswordWithOtp()">Verify OTP & Reset Password</button>
 
                     </div>
 
@@ -357,6 +453,7 @@ function submitForm() {
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script src="{{ url_for('static', filename='auth.js') }}"></script>
 
