@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Performance Dashboard | FinServe</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-light dashboard-page">
+
+<nav class="dashboard-nav">
+    <div class="container dashboard-nav-inner">
+        <a class="dashboard-brand" href="/dashboard">FinServe</a>
+        <div class="dashboard-main-links">
+            <a href="/dashboard">Main Dashboard</a>
+            <a href="/dashboard/performance">Performance</a>
+        </div>
+        <div class="dashboard-user-actions">
+            <button class="btn btn-sm btn-outline-light" onclick="logout()">Logout</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="interactive-heading mb-0">Performance Charts</h3>
+        <a href="/dashboard" class="btn btn-outline-primary btn-sm">Back to Dashboard</a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6>Total Invested</h6>
+                    <h5>{{ portfolio.invested }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6>Current Value</h6>
+                    <h5>{{ portfolio.current }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6>Total Returns</h6>
+                    <h5 class="{{ 'text-success' if portfolio.returns >= 0 else 'text-danger' }}">{{ portfolio.returns }}%</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4 dashboard-card">
+        <div class="card-header fw-bold interactive-heading">Portfolio Performance Trend</div>
+        <div class="card-body">
+            <div style="height: 360px;">
+                <canvas id="portfolioPerfChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm dashboard-card">
+        <div class="card-header fw-bold interactive-heading">Stock Recommendation Performance</div>
+        <div class="card-body">
+            <div style="height: 360px;">
+                <canvas id="recommendationPerfChart"></canvas>
+            </div>
+            <div class="small text-muted mt-2">
+                Avg Return: <strong>{{ recommendation_perf.avg_return }}%</strong> |
+                Hit Rate: <strong>{{ recommendation_perf.hit_rate }}%</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function logout() {
+    fetch("/logout")
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        window.location.href = "/";
+    });
+}
+
+function renderPerformanceCharts() {
+    if (typeof Chart === "undefined") return;
+
+    const portfolioData = {{ portfolio_perf|tojson }};
+    const recData = {{ recommendation_perf|tojson }};
+
+    const pCanvas = document.getElementById("portfolioPerfChart");
+    if (pCanvas) {
+        if (!portfolioData.labels || !portfolioData.labels.length) {
+            const ctx = pCanvas.getContext("2d");
+            ctx.font = "14px Segoe UI";
+            ctx.fillStyle = "#6c757d";
+            ctx.fillText("No portfolio transaction history available yet.", 12, 24);
+        } else {
+            new Chart(pCanvas, {
+                type: "line",
+                data: {
+                    labels: portfolioData.labels,
+                    datasets: [
+                        {
+                            label: "Net Invested",
+                            data: portfolioData.net_invested,
+                            borderColor: "#0d6efd",
+                            backgroundColor: "rgba(13,110,253,0.12)",
+                            fill: true,
+                            tension: 0.25,
+                            showLine: true,
+                            pointStyle: "circle",
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            borderWidth: 2
+                        },
+                        {
+                            label: "Current Value",
+                            data: portfolioData.current_value || [],
+                            borderColor: "#198754",
+                            backgroundColor: "rgba(25,135,84,0.08)",
+                            fill: false,
+                            tension: 0.2,
+                            showLine: true,
+                            pointStyle: "circle",
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: "top" },
+                        tooltip: {
+                            callbacks: {
+                                title: function (items) {
+                                    if (!items || !items.length) return "";
+                                    const idx = items[0].dataIndex;
+                                    return portfolioData.labels[idx] || "";
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 8,
+                                callback: function (value, index) {
+                                    const label = portfolioData.labels[index];
+                                    if (!label) return "";
+                                    const parts = String(label).split("-");
+                                    if (parts.length < 2) return label;
+                                    const year = parts[0];
+                                    const month = Number(parts[1]) - 1;
+                                    const dt = new Date(Number(year), month, 1);
+                                    const monthYear = dt.toLocaleDateString("en-IN", {
+                                        month: "short",
+                                        year: "numeric"
+                                    });
+                                    if (index === 0) return monthYear;
+                                    const prev = portfolioData.labels[index - 1] || "";
+                                    const prevParts = String(prev).split("-");
+                                    if (prevParts.length < 2) return monthYear;
+                                    if (prevParts[0] !== parts[0] || prevParts[1] !== parts[1]) return monthYear;
+                                    return "";
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    const rCanvas = document.getElementById("recommendationPerfChart");
+    if (rCanvas) {
+        if (!recData.items || !recData.items.length) {
+            const ctx = rCanvas.getContext("2d");
+            ctx.font = "14px Segoe UI";
+            ctx.fillStyle = "#6c757d";
+            ctx.fillText("No recommendation performance data yet.", 12, 24);
+        } else {
+            const labels = recData.items.map(i => i.symbol);
+            const values = recData.items.map(i => i.return_pct);
+            const colors = values.map(v => v >= 0 ? "rgba(13,110,253,0.72)" : "rgba(220,53,69,0.72)");
+
+            new Chart(rCanvas, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Return %",
+                        data: values,
+                        backgroundColor: "rgba(13,110,253,0.08)",
+                        borderColor: "#0d6efd",
+                        borderWidth: 2,
+                        showLine: true,
+                        pointStyle: "circle",
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: colors,
+                        pointBorderColor: colors,
+                        tension: 0.2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            title: { display: true, text: "Return %" }
+                        },
+                        x: { ticks: { maxRotation: 0, minRotation: 0 } }
+                    }
+                }
+            });
+        }
+    }
+}
+
+renderPerformanceCharts();
+</script>
+
+</body>
+</html>
